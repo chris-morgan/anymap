@@ -148,7 +148,9 @@ impl AnyMap {
 fn bench_insertion(b: &mut ::test::Bencher) {
     b.iter(|| {
         let mut data = AnyMap::new();
-        data.insert(42i);
+        for _ in range(0, 100) {
+            data.insert(42i);
+        }
     })
 }
 
@@ -156,7 +158,9 @@ fn bench_insertion(b: &mut ::test::Bencher) {
 fn bench_find_missing(b: &mut ::test::Bencher) {
     b.iter(|| {
         let data = AnyMap::new();
-        assert_eq!(data.find(), None::<&int>);
+        for _ in range(0, 100) {
+            assert_eq!(data.find(), None::<&int>);
+        }
     })
 }
 
@@ -165,6 +169,9 @@ fn bench_find_present(b: &mut ::test::Bencher) {
     b.iter(|| {
         let mut data = AnyMap::new();
         data.insert(42i);
-        assert_eq!(data.find(), Some(&42i));
+        // These inner loops are a feeble attempt to drown the other factors.
+        for _ in range(0, 100) {
+            assert_eq!(data.find(), Some(&42i));
+        }
     })
 }
