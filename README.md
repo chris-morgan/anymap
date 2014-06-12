@@ -1,5 +1,7 @@
-``AnyMap``
-==========
+``AnyMap``, a safe and convenient store for one value of each type
+==================================================================
+
+[![Build Status](https://travis-ci.org/chris-morgan/anymap.svg?branch=master)](https://travis-ci.org/chris-morgan/anymap)
 
 If you’re familiar with Go and Go web frameworks, you may have come across the common “environment” pattern for storing data related to the request. It’s typically something like ``map[string]interface{}`` and is accessed with arbitrary strings which may clash and type assertions which are a little unwieldy and must be used very carefully.
 
