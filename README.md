@@ -3,11 +3,11 @@
 
 [![Build Status](https://travis-ci.org/chris-morgan/anymap.svg?branch=master)](https://travis-ci.org/chris-morgan/anymap)
 
-If you’re familiar with Go and Go web frameworks, you may have come across the common “environment” pattern for storing data related to the request. It’s typically something like ``map[string]interface{}`` and is accessed with arbitrary strings which may clash and type assertions which are a little unwieldy and must be used very carefully.
+If you’re familiar with Go and Go web frameworks, you may have come across the common “environment” pattern for storing data related to the request. It’s typically something like ``map[string]interface{}`` and is accessed with arbitrary strings which may clash and type assertions which are a little unwieldy and must be used very carefully. (Personally I would consider that it is just *asking* for things to blow up in your face.) In a language like Go, lacking in generics, this is the best that can be done; such a thing cannot possibly be made safe without generics.
 
-This is madness. Hare-brained, stark, raving madness, just *asking* for things to blow up in your face. Unfortunately for people in Go, it’s the best that they can have because of its weak type system; such a thing cannot possibly be made safe without generics.
+As another example of such an interface, JavaScript objects are exactly the same—a mapping of string keys to arbitrary values. (There it is actually *more* dangerous, because methods and fields/attributes/properties are on the same plane.)
 
-Fortunately, we can do better in Rust. Our type system is quite equal to easy, robust expression of such problems.
+Fortunately, we can do better than these things in Rust. Our type system is quite equal to easy, robust expression of such problems.
 
 The ``AnyMap`` type is a friendly wrapper around a ``HashMap<TypeId, Box<Any>:'static>``, exposing a nice, easy typed interface, perfectly safe and absolutely robust.
 
@@ -18,12 +18,16 @@ Instructions
 
     make
 
+This includes building the documentation which you may find at ``doc/anymap/index.html``.
+
+The documentation, with examples, [is also available online](http://www.rust-ci.org/chris-morgan/anymap/doc/anymap/struct.AnyMap.html).
+
 Future work
 -----------
 
 I think that the only thing left for this is filling out additional methods from ``HashMap`` as appropriate.
 
-It’s a very simple thing.
+It’s a very simple thing. (The initial implementation time was under ten minutes.)
 
 Author
 ------
