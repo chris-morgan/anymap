@@ -1,0 +1,12 @@
+env:
+  global:
+    - secure: o2bgX4ObmN5b/lG2pk7U4tSu2/h0tLUxhHe3X6ZHi7A6MFOMtZOV+7g5TJX94YyAcsT5AWFSnl1Wv4dZcIJXsFkcZguFu6WI/Psc09K3zsA6NtXrqdcKv7XRBxivTKvfZ14PYhLgOuU+o1HreCQvolr5nmiX2gORmvD2Xc3qbHI=
+before_install:
+  - wget http://static.rust-lang.org/dist/rust-nightly-x86_64-unknown-linux-gnu.tar.gz
+  - tar xf rust-nightly-x86_64-unknown-linux-gnu.tar.gz
+install:
+  - sudo ./rust-nightly-x86_64-unknown-linux-gnu/install.sh
+script:
+  - make all docs test
+after_script:
+  - curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
