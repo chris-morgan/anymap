@@ -3,7 +3,8 @@
 #![crate_id = "anymap#0.9"]
 #![crate_type = "rlib"]
 #![crate_type = "dylib"]
-#![warn(unnecessary_qualification, non_uppercase_statics, unsafe_block,
+#![feature(default_type_params)]
+#![warn(unnecessary_qualification, non_uppercase_statics,
         variant_size_difference, managed_heap_memory, unnecessary_typecast,
         missing_doc, unused_result, deprecated_owned_vector)]
 
@@ -13,6 +14,36 @@ extern crate test;
 use std::any::{Any, AnyRefExt, AnyMutRefExt};
 use std::intrinsics::TypeId;
 use std::collections::HashMap;
+use std::hash::{Hash, Hasher, Writer};
+
+struct TypeIdHasher;
+
+struct TypeIdState {
+    value: u64,
+}
+
+impl Writer for TypeIdState {
+    #[inline(always)]
+    fn write(&mut self, bytes: &[u8]) {
+        // This expects to receive one and exactly one 64-bit value
+        debug_assert!(bytes.len() == 8);
+        unsafe {
+            std::ptr::copy_nonoverlapping_memory(&mut self.value,
+                                                 std::mem::transmute(&bytes[0]),
+                                                 1)
+        }
+    }
+}
+
+impl Hasher<TypeIdState> for TypeIdHasher {
+    fn hash<T: Hash<TypeIdState>>(&self, value: &T) -> u64 {
+        let mut state = TypeIdState {
+            value: 0,
+        };
+        value.hash(&mut state);
+        state.value
+    }
+}
 
 /// A map containing zero or one values for any given type and allowing convenient,
 /// type-safe access to those values.
@@ -40,14 +71,14 @@ use std::collections::HashMap;
 ///
 /// Values containing non-static references are not permitted.
 pub struct AnyMap {
-    data: HashMap<TypeId, Box<Any>:'static>,
+    data: HashMap<TypeId, Box<Any>:'static, TypeIdHasher>,
 }
 
 impl AnyMap {
     /// Construct a new `AnyMap`.
     pub fn new() -> AnyMap {
         AnyMap {
-            data: HashMap::new(),
+            data: HashMap::with_hasher(TypeIdHasher),
         }
     }
 }
