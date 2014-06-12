@@ -39,6 +39,9 @@ build/quicktest: $(SRC)
 # 	build/test --test
 test: anymap doctest
 
+bench: anymap build/test
+	build/test --bench
+
 doctest: $(SRC) $(LIB)
 	$(RUSTDOC) -L build --test src/lib.rs
 

@@ -7,6 +7,9 @@
         variant_size_difference, managed_heap_memory, unnecessary_typecast,
         missing_doc, unused_result, deprecated_owned_vector)]
 
+#[cfg(test)]
+extern crate test;
+
 use std::any::{Any, AnyRefExt, AnyMutRefExt};
 use std::intrinsics::TypeId;
 use std::collections::HashMap;
@@ -70,4 +73,29 @@ impl AnyMap {
     pub fn remove<T: 'static>(&mut self) {
         self.data.remove(&TypeId::of::<T>());
     }
+}
+
+#[bench]
+fn bench_insertion(b: &mut ::test::Bencher) {
+    b.iter(|| {
+        let mut data = AnyMap::new();
+        data.insert(42i);
+    })
+}
+
+#[bench]
+fn bench_find_missing(b: &mut ::test::Bencher) {
+    b.iter(|| {
+        let data = AnyMap::new();
+        assert_eq!(data.find(), None::<&int>);
+    })
+}
+
+#[bench]
+fn bench_find_present(b: &mut ::test::Bencher) {
+    b.iter(|| {
+        let mut data = AnyMap::new();
+        data.insert(42i);
+        assert_eq!(data.find(), Some(&42i));
+    })
 }
