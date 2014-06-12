@@ -11,10 +11,12 @@
 #[cfg(test)]
 extern crate test;
 
-use std::any::{Any, AnyRefExt, AnyMutRefExt};
+use std::any::Any;
 use std::intrinsics::TypeId;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher, Writer};
+use std::mem::{transmute, transmute_copy};
+use std::raw::TraitObject;
 
 struct TypeIdHasher;
 
@@ -29,7 +31,7 @@ impl Writer for TypeIdState {
         debug_assert!(bytes.len() == 8);
         unsafe {
             std::ptr::copy_nonoverlapping_memory(&mut self.value,
-                                                 std::mem::transmute(&bytes[0]),
+                                                 transmute(&bytes[0]),
                                                  1)
         }
     }
@@ -42,6 +44,42 @@ impl Hasher<TypeIdState> for TypeIdHasher {
         };
         value.hash(&mut state);
         state.value
+    }
+}
+
+/// An extension of `AnyRefExt` allowing unchecked downcasting of trait objects to `&T`.
+trait UncheckedAnyRefExt<'a> {
+    /// Returns a reference to the boxed value, assuming that it is of type `T`. This should only be
+    /// called if you are ABSOLUTELY CERTAIN of `T` as you will get really wacky output if it’s not.
+    unsafe fn as_ref_unchecked<T: 'static>(self) -> &'a T;
+}
+
+impl<'a> UncheckedAnyRefExt<'a> for &'a Any {
+    #[inline]
+    unsafe fn as_ref_unchecked<T: 'static>(self) -> &'a T {
+        // Get the raw representation of the trait object
+        let to: TraitObject = transmute_copy(&self);
+
+        // Extract the data pointer
+        transmute(to.data)
+    }
+}
+
+/// An extension of `AnyMutRefExt` allowing unchecked downcasting of trait objects to `&mut T`.
+trait UncheckedAnyMutRefExt<'a> {
+    /// Returns a reference to the boxed value, assuming that it is of type `T`. This should only be
+    /// called if you are ABSOLUTELY CERTAIN of `T` as you will get really wacky output if it’s not.
+    unsafe fn as_mut_unchecked<T: 'static>(self) -> &'a mut T;
+}
+
+impl<'a> UncheckedAnyMutRefExt<'a> for &'a mut Any {
+    #[inline]
+    unsafe fn as_mut_unchecked<T: 'static>(self) -> &'a mut T {
+        // Get the raw representation of the trait object
+        let to: TraitObject = transmute_copy(&self);
+
+        // Extract the data pointer
+        transmute(to.data)
     }
 }
 
@@ -86,12 +124,12 @@ impl AnyMap {
 impl AnyMap {
     /// Retrieve the value stored in the map for the type `T`, if it exists.
     pub fn find<'a, T: 'static>(&'a self) -> Option<&'a T> {
-        self.data.find(&TypeId::of::<T>()).and_then(|any| any.as_ref::<T>())
+        self.data.find(&TypeId::of::<T>()).map(|any| unsafe { any.as_ref_unchecked::<T>() })
     }
 
     /// Retrieve a mutable reference to the value stored in the map for the type `T`, if it exists.
     pub fn find_mut<'a, T: 'static>(&'a mut self) -> Option<&'a mut T> {
-        self.data.find_mut(&TypeId::of::<T>()).and_then(|any| any.as_mut::<T>())
+        self.data.find_mut(&TypeId::of::<T>()).map(|any| unsafe { any.as_mut_unchecked::<T>() })
     }
 
     /// Set the value contained in the map for the type `T`.
