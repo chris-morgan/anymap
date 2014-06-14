@@ -135,7 +135,7 @@ impl AnyMap {
     /// Set the value contained in the map for the type `T`.
     /// This will override any previous value stored.
     pub fn insert<T: 'static>(&mut self, value: T) {
-        self.data.insert(TypeId::of::<T>(), box value as Box<Any>:'static);
+        self.data.insert(TypeId::of::<T>(), box value as Box<Any>);
     }
 
     /// Remove the value for the type `T` if it existed.
