@@ -6,7 +6,7 @@
 #![feature(default_type_params)]
 #![warn(unnecessary_qualification, non_uppercase_statics,
         variant_size_difference, managed_heap_memory, unnecessary_typecast,
-        missing_doc, unused_result, deprecated_owned_vector)]
+        missing_doc, unused_result)]
 
 #[cfg(test)]
 extern crate test;
