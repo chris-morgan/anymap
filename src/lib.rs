@@ -6,7 +6,7 @@
 #![feature(default_type_params)]
 #![warn(unnecessary_qualification, non_uppercase_statics,
         variant_size_difference, managed_heap_memory, unnecessary_typecast,
-        missing_doc, unused_result, deprecated_owned_vector)]
+        missing_doc, unused_result)]
 
 #[cfg(test)]
 extern crate test;
@@ -135,7 +135,7 @@ impl AnyMap {
     /// Set the value contained in the map for the type `T`.
     /// This will override any previous value stored.
     pub fn insert<T: 'static>(&mut self, value: T) {
-        self.data.insert(TypeId::of::<T>(), box value as Box<Any>:'static);
+        self.data.insert(TypeId::of::<T>(), box value as Box<Any>);
     }
 
     /// Remove the value for the type `T` if it existed.
