@@ -109,7 +109,7 @@ impl<'a> UncheckedAnyMutRefExt<'a> for &'a mut Any {
 ///
 /// Values containing non-static references are not permitted.
 pub struct AnyMap {
-    data: HashMap<TypeId, Box<Any>:'static, TypeIdHasher>,
+    data: HashMap<TypeId, Box<Any>, TypeIdHasher>,
 }
 
 impl AnyMap {
