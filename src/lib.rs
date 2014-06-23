@@ -13,7 +13,7 @@ extern crate test;
 
 use std::any::Any;
 use std::intrinsics::TypeId;
-use std::collections::HashMap;
+use std::collections::{Collection, HashMap, Mutable};
 use std::hash::{Hash, Hasher, Writer};
 use std::mem::{transmute, transmute_copy};
 use std::raw::TraitObject;
@@ -141,6 +141,22 @@ impl AnyMap {
     /// Remove the value for the type `T` if it existed.
     pub fn remove<T: 'static>(&mut self) {
         self.data.remove(&TypeId::of::<T>());
+    }
+}
+
+impl Collection for AnyMap {
+    fn len(&self) -> uint {
+        self.data.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.data.is_empty()
+    }
+}
+
+impl Mutable for AnyMap {
+    fn clear(&mut self) {
+        self.data.clear();
     }
 }
 
