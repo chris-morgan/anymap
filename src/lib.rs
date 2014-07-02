@@ -1,6 +1,6 @@
 //! This crate provides the `AnyMap` type, a safe and convenient store for one value of each type.
 
-#![crate_id = "anymap#0.9"]
+#![crate_id = "anymap#0.9.0"]
 #![crate_type = "rlib"]
 #![crate_type = "dylib"]
 #![feature(default_type_params)]
