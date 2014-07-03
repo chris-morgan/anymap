@@ -1,0 +1,14 @@
+
+[package]
+
+name = "anymap"
+version = "0.9.0"
+readme = "README.md"
+authors = [ "Chris Morgan <me@chrismorgan.info>" ]
+tags = ["data-structures"]
+
+[[lib]]
+
+name = "anymap"
+path = "src/lib.rs"
+
