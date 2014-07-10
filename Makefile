@@ -12,7 +12,7 @@ rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) \
   $(filter $(subst *,%,$2),$d))
 
 SRC := $(call rwildcard,src/,*.rs)
-LIB := target/$(shell rustc --crate-file-name src/lib.rs --crate-type rlib)
+LIB := target/$(shell rustc --print-file-name src/lib.rs)
 ifeq ($(LIB),target/)
 # We may not have rustc or the lib.rs file may be broken.
 # But don't break the rules on that account.
