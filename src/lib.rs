@@ -131,10 +131,30 @@ impl AnyMap {
         self.data.find_mut(&TypeId::of::<T>()).map(|any| unsafe { any.as_mut_unchecked::<T>() })
     }
 
+    /// Retrieve a mutable reference to the value stored in the map for the type `T`, if it exists.
+    /// If value is not found, insert it as v.
+    pub fn find_or_insert<'a, T: 'static>(&'a mut self, v: T) -> &'a mut T {
+        unsafe {self.data.find_or_insert(TypeId::of::<T>(), box v as Box<Any>).as_mut_unchecked::<T>() }
+    }
+
+    /// Retrieve a mutable reference to the value stored in the map for the type `T`, if it exists.
+    /// If value is not found, insert one calculated by f.
+    pub fn find_or_insert_with<'a, T: 'static>(&'a mut self, f: || -> T) -> &'a mut T {
+        let newf = |k: &TypeId| -> Box<Any> { box f() as Box<Any> };
+        unsafe {self.data.find_or_insert_with(TypeId::of::<T>(), newf).as_mut_unchecked::<T>() }
+    }
+
+
     /// Set the value contained in the map for the type `T`.
     /// This will override any previous value stored.
     pub fn insert<T: 'static>(&mut self, value: T) {
         self.data.insert(TypeId::of::<T>(), box value as Box<Any>);
+    }
+
+    /// Set the value contained in the map for the type `T`.
+    /// This will override any previous value stored.
+    pub fn insert_with<T: 'static>(&mut self, f: || -> T) {
+        self.data.insert(TypeId::of::<T>(), box f() as Box<Any>);
     }
 
     /// Remove the value for the type `T` if it existed.
