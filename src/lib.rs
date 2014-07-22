@@ -144,17 +144,10 @@ impl AnyMap {
         unsafe {self.data.find_or_insert_with(TypeId::of::<T>(), newf).as_mut_unchecked::<T>() }
     }
 
-
     /// Set the value contained in the map for the type `T`.
     /// This will override any previous value stored.
     pub fn insert<T: 'static>(&mut self, value: T) {
         self.data.insert(TypeId::of::<T>(), box value as Box<Any>);
-    }
-
-    /// Set the value contained in the map for the type `T`.
-    /// This will override any previous value stored.
-    pub fn insert_with<T: 'static>(&mut self, f: || -> T) {
-        self.data.insert(TypeId::of::<T>(), box f() as Box<Any>);
     }
 
     /// Remove the value for the type `T` if it existed.
