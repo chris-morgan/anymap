@@ -141,6 +141,11 @@ impl AnyMap {
     pub fn remove<T: 'static>(&mut self) {
         self.data.remove(&TypeId::of::<T>());
     }
+
+    /// Does a value of type `T` exist?
+    pub fn contains<T: 'static>(&self) -> bool {
+        self.data.contains_key(&TypeId::of::<T>())
+    }
 }
 
 impl Collection for AnyMap {
