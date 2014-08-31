@@ -53,7 +53,7 @@ trait UncheckedAnyRefExt<'a> {
     unsafe fn as_ref_unchecked<T: 'static>(self) -> &'a T;
 }
 
-impl<'a> UncheckedAnyRefExt<'a> for &'a Any {
+impl<'a> UncheckedAnyRefExt<'a> for &'a Any+'a {
     #[inline]
     unsafe fn as_ref_unchecked<T: 'static>(self) -> &'a T {
         // Get the raw representation of the trait object
@@ -71,7 +71,7 @@ trait UncheckedAnyMutRefExt<'a> {
     unsafe fn as_mut_unchecked<T: 'static>(self) -> &'a mut T;
 }
 
-impl<'a> UncheckedAnyMutRefExt<'a> for &'a mut Any {
+impl<'a> UncheckedAnyMutRefExt<'a> for &'a mut Any+'a {
     #[inline]
     unsafe fn as_mut_unchecked<T: 'static>(self) -> &'a mut T {
         // Get the raw representation of the trait object
@@ -108,7 +108,7 @@ impl<'a> UncheckedAnyMutRefExt<'a> for &'a mut Any {
 ///
 /// Values containing non-static references are not permitted.
 pub struct AnyMap {
-    data: HashMap<TypeId, Box<Any>, TypeIdHasher>,
+    data: HashMap<TypeId, Box<Any+'static>, TypeIdHasher>,
 }
 
 impl AnyMap {
