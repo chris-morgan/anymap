@@ -102,7 +102,7 @@ impl<'a> UncheckedAnyMutRefExt<'a> for &'a mut Any + 'a {
 /// assert_eq!(data.find::<Foo>(), None);
 /// data.insert(Foo { str: "foo".to_string() });
 /// assert_eq!(data.find(), Some(&Foo { str: "foo".to_string() }));
-/// data.find_mut::<Foo>().map(|foo| foo.str.push_char('t'));
+/// data.find_mut::<Foo>().map(|foo| foo.str.push('t'));
 /// assert_eq!(data.find::<Foo>().unwrap().str.as_slice(), "foot");
 /// ```
 ///
