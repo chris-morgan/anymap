@@ -3,16 +3,16 @@
 #![crate_name = "anymap"]
 #![crate_type = "lib"]
 #![feature(default_type_params)]
-#![warn(unnecessary_qualification, non_uppercase_statics,
-        variant_size_difference, unnecessary_typecast,
-        missing_doc, unused_result)]
+#![warn(unused_qualifications, non_upper_case_globals,
+        variant_size_differences, unused_typecasts,
+        missing_docs, unused_results)]
 
 #[cfg(test)]
 extern crate test;
 
 use std::any::Any;
 use std::intrinsics::TypeId;
-use std::collections::{Collection, HashMap, Mutable};
+use std::collections::HashMap;
 use std::hash::{Hash, Hasher, Writer};
 use std::mem::{transmute, transmute_copy};
 use std::raw::TraitObject;
@@ -37,7 +37,7 @@ impl Writer for TypeIdState {
 }
 
 impl Hasher<TypeIdState> for TypeIdHasher {
-    fn hash<T: Hash<TypeIdState>>(&self, value: &T) -> u64 {
+    fn hash<Sized? T: Hash<TypeIdState>>(&self, value: &T) -> u64 {
         let mut state = TypeIdState {
             value: 0,
         };
@@ -146,20 +146,19 @@ impl AnyMap {
     pub fn contains<T: 'static>(&self) -> bool {
         self.data.contains_key(&TypeId::of::<T>())
     }
-}
 
-impl Collection for AnyMap {
-    fn len(&self) -> uint {
+    /// Returns the number of items in the collection.
+    pub fn len(&self) -> uint {
         self.data.len()
     }
 
-    fn is_empty(&self) -> bool {
+    /// Returns true if there are no items in the collection.
+    pub fn is_empty(&self) -> bool {
         self.data.is_empty()
     }
-}
 
-impl Mutable for AnyMap {
-    fn clear(&mut self) {
+    /// Removes all items from the collection.
+    pub fn clear(&mut self) {
         self.data.clear();
     }
 }
