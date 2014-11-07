@@ -122,12 +122,12 @@ impl AnyMap {
 
 impl AnyMap {
     /// Retrieve the value stored in the map for the type `T`, if it exists.
-    pub fn find<'a, T: 'static>(&'a self) -> Option<&'a T> {
+    pub fn find<T: 'static>(&self) -> Option<&T> {
         self.data.find(&TypeId::of::<T>()).map(|any| unsafe { any.as_ref_unchecked::<T>() })
     }
 
     /// Retrieve a mutable reference to the value stored in the map for the type `T`, if it exists.
-    pub fn find_mut<'a, T: 'static>(&'a mut self) -> Option<&'a mut T> {
+    pub fn find_mut<T: 'static>(&mut self) -> Option<&mut T> {
         self.data.find_mut(&TypeId::of::<T>()).map(|any| unsafe { any.as_mut_unchecked::<T>() })
     }
 
