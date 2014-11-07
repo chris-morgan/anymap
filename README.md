@@ -16,9 +16,7 @@ What this means is that in an ``AnyMap`` you may store zero or one values for ev
 Instructions
 ------------
 
-    make
-
-This includes building the documentation which you may find at ``doc/anymap/index.html``.
+Cargo all the way.
 
 The documentation, with examples, [is also available online](http://www.rust-ci.org/chris-morgan/anymap/doc/anymap/struct.AnyMap.html).
 
