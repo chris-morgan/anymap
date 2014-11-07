@@ -8,8 +8,11 @@
 #[cfg(test)]
 extern crate test;
 
-use std::any::Any;
-use std::intrinsics::{forget, TypeId};
+use std::intrinsics::forget;
+//use std::any::Any;
+//use std::intrinsics::TypeId;
+pub use with_clone::Any;
+use with_clone::TypeId;
 use std::collections::HashMap;
 use std::collections::hash_map;
 use std::hash::{Hash, Hasher, Writer};
@@ -18,8 +21,10 @@ use std::raw::TraitObject;
 
 pub use Entry::{Vacant, Occupied};
 
+#[deriving(Clone)]
 struct TypeIdHasher;
 
+#[deriving(Clone)]
 struct TypeIdState {
     value: u64,
 }
@@ -104,6 +109,57 @@ impl UncheckedBoxAny for Box<Any + 'static> {
     }
 }
 
+mod with_clone {
+    use std::hash::{Hash, Writer};
+
+    #[doc(hidden)]
+    pub trait CloneToAny {
+        /// Clone `self` into a new `Box<Any>` object.
+        fn clone_to_any(&self) -> Box<Any>;
+    }
+
+    impl<T: 'static + Clone> CloneToAny for T {
+        fn clone_to_any(&self) -> Box<Any> {
+            box self.clone()
+        }
+    }
+
+    /// Pretty much just `std::any::Any + Clone`.
+    pub trait Any: ::std::any::Any + CloneToAny { }
+
+    impl<T: 'static + Clone> Any for T { }
+
+    impl Clone for Box<Any> {
+        fn clone(&self) -> Box<Any> {
+            (**self).clone_to_any()
+        }
+    }
+
+    /// TypeId, but implementing Clone.
+    #[deriving(PartialEq, Eq, Show)]
+    pub struct TypeId(::std::intrinsics::TypeId);
+
+    impl TypeId {
+        pub fn of<T: 'static>() -> TypeId {
+            TypeId(::std::intrinsics::TypeId::of::<T>())
+        }
+    }
+
+    impl <S: Writer> Hash<S> for TypeId {
+        #[inline]
+        fn hash(&self, state: &mut S) {
+            let TypeId(ref type_id) = *self;
+            Hash::hash(type_id, state);
+        }
+    }
+
+    impl Clone for TypeId {
+        fn clone(&self) -> TypeId {
+            *self
+        }
+    }
+}
+
 /// A map containing zero or one values for any given type and allowing convenient,
 /// type-safe access to those values.
 ///
@@ -116,7 +172,7 @@ impl UncheckedBoxAny for Box<Any + 'static> {
 /// data.remove::<int>();
 /// assert_eq!(data.get::<int>(), None);
 ///
-/// #[deriving(PartialEq, Show)]
+/// #[deriving(Clone, PartialEq, Show)]
 /// struct Foo {
 ///     str: String,
 /// }
@@ -129,6 +185,7 @@ impl UncheckedBoxAny for Box<Any + 'static> {
 /// ```
 ///
 /// Values containing non-static references are not permitted.
+#[deriving(Clone)]
 pub struct AnyMap {
     data: HashMap<TypeId, Box<Any + 'static>, TypeIdHasher>,
 }
@@ -227,7 +284,7 @@ pub enum Entry<'a, V: 'a> {
     Vacant(VacantEntry<'a, V>),
 }
 
-impl<'a, V: 'static> OccupiedEntry<'a, V> {
+impl<'a, V: 'static + Clone> OccupiedEntry<'a, V> {
     /// Gets a reference to the value in the entry
     pub fn get(&self) -> &V {
         unsafe { self.entry.get().downcast_ref_unchecked() }
@@ -255,7 +312,7 @@ impl<'a, V: 'static> OccupiedEntry<'a, V> {
     }
 }
 
-impl<'a, V: 'static> VacantEntry<'a, V> {
+impl<'a, V: 'static + Clone> VacantEntry<'a, V> {
     /// Sets the value of the entry with the VacantEntry's key,
     /// and returns a mutable reference to it
     pub fn set(self, value: V) -> &'a mut V {
@@ -297,13 +354,13 @@ fn bench_get_present(b: &mut ::test::Bencher) {
 
 #[test]
 fn test_entry() {
-    #[deriving(Show, PartialEq)] struct A(int);
-    #[deriving(Show, PartialEq)] struct B(int);
-    #[deriving(Show, PartialEq)] struct C(int);
-    #[deriving(Show, PartialEq)] struct D(int);
-    #[deriving(Show, PartialEq)] struct E(int);
-    #[deriving(Show, PartialEq)] struct F(int);
-    #[deriving(Show, PartialEq)] struct J(int);
+    #[deriving(Show, PartialEq, Clone)] struct A(int);
+    #[deriving(Show, PartialEq, Clone)] struct B(int);
+    #[deriving(Show, PartialEq, Clone)] struct C(int);
+    #[deriving(Show, PartialEq, Clone)] struct D(int);
+    #[deriving(Show, PartialEq, Clone)] struct E(int);
+    #[deriving(Show, PartialEq, Clone)] struct F(int);
+    #[deriving(Show, PartialEq, Clone)] struct J(int);
 
     let mut map: AnyMap = AnyMap::new();
     assert_eq!(map.insert(A(10)), None);
@@ -358,4 +415,15 @@ fn test_entry() {
     }
     assert_eq!(map.get::<J>().unwrap(), &J(1000));
     assert_eq!(map.len(), 6);
+
+    // Cloning works as intended
+    let map2 = map.clone();
+    assert_eq!(map2.len(), 6)
+    assert_eq!(map2.get::<A>(), Some(&A(100)));
+    assert_eq!(map2.get::<B>(), Some(&B(200)));
+    assert_eq!(map2.get::<C>(), None);
+    assert_eq!(map2.get::<D>(), Some(&D(40)));
+    assert_eq!(map2.get::<E>(), Some(&E(50)));
+    assert_eq!(map2.get::<F>(), Some(&F(60)));
+    assert_eq!(map2.get::<J>(), Some(&J(1000)));
 }
