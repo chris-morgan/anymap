@@ -122,28 +122,28 @@ impl AnyMap {
 
 impl AnyMap {
     /// Retrieve the value stored in the map for the type `T`, if it exists.
-    pub fn find<T: 'static>(&self) -> Option<&T> {
+    pub fn find<T: Any + 'static>(&self) -> Option<&T> {
         self.data.find(&TypeId::of::<T>()).map(|any| unsafe { any.as_ref_unchecked::<T>() })
     }
 
     /// Retrieve a mutable reference to the value stored in the map for the type `T`, if it exists.
-    pub fn find_mut<T: 'static>(&mut self) -> Option<&mut T> {
+    pub fn find_mut<T: Any + 'static>(&mut self) -> Option<&mut T> {
         self.data.find_mut(&TypeId::of::<T>()).map(|any| unsafe { any.as_mut_unchecked::<T>() })
     }
 
     /// Set the value contained in the map for the type `T`.
     /// This will override any previous value stored.
-    pub fn insert<T: 'static>(&mut self, value: T) {
+    pub fn insert<T: Any + 'static>(&mut self, value: T) {
         self.data.insert(TypeId::of::<T>(), box value as Box<Any>);
     }
 
     /// Remove the value for the type `T` if it existed.
-    pub fn remove<T: 'static>(&mut self) {
+    pub fn remove<T: Any + 'static>(&mut self) {
         self.data.remove(&TypeId::of::<T>());
     }
 
     /// Does a value of type `T` exist?
-    pub fn contains<T: 'static>(&self) -> bool {
+    pub fn contains<T: Any + 'static>(&self) -> bool {
         self.data.contains_key(&TypeId::of::<T>())
     }
 
