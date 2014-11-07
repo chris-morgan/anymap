@@ -11,7 +11,7 @@
 extern crate test;
 
 use std::any::Any;
-use std::intrinsics::TypeId;
+use std::intrinsics::{forget, TypeId};
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher, Writer};
 use std::mem::{transmute, transmute_copy};
@@ -50,12 +50,12 @@ impl Hasher<TypeIdState> for TypeIdHasher {
 trait UncheckedAnyRefExt<'a> {
     /// Returns a reference to the boxed value, assuming that it is of type `T`. This should only be
     /// called if you are ABSOLUTELY CERTAIN of `T` as you will get really wacky output if it’s not.
-    unsafe fn as_ref_unchecked<T: 'static>(self) -> &'a T;
+    unsafe fn downcast_ref_unchecked<T: 'static>(self) -> &'a T;
 }
 
 impl<'a> UncheckedAnyRefExt<'a> for &'a Any + 'a {
     #[inline]
-    unsafe fn as_ref_unchecked<T: 'static>(self) -> &'a T {
+    unsafe fn downcast_ref_unchecked<T: 'static>(self) -> &'a T {
         // Get the raw representation of the trait object
         let to: TraitObject = transmute_copy(&self);
 
@@ -68,14 +68,35 @@ impl<'a> UncheckedAnyRefExt<'a> for &'a Any + 'a {
 trait UncheckedAnyMutRefExt<'a> {
     /// Returns a reference to the boxed value, assuming that it is of type `T`. This should only be
     /// called if you are ABSOLUTELY CERTAIN of `T` as you will get really wacky output if it’s not.
-    unsafe fn as_mut_unchecked<T: 'static>(self) -> &'a mut T;
+    unsafe fn downcast_mut_unchecked<T: 'static>(self) -> &'a mut T;
 }
 
 impl<'a> UncheckedAnyMutRefExt<'a> for &'a mut Any + 'a {
     #[inline]
-    unsafe fn as_mut_unchecked<T: 'static>(self) -> &'a mut T {
+    unsafe fn downcast_mut_unchecked<T: 'static>(self) -> &'a mut T {
         // Get the raw representation of the trait object
         let to: TraitObject = transmute_copy(&self);
+
+        // Extract the data pointer
+        transmute(to.data)
+    }
+}
+
+/// An extension of `BoxAny` allowing unchecked downcasting of trait objects to `Box<T>`.
+trait UncheckedBoxAny {
+    /// Returns the boxed value, assuming that it is of type `T`. This should only be called if you
+    /// are ABSOLUTELY CERTAIN of `T` as you will get really wacky output if it’s not.
+    unsafe fn downcast_unchecked<T: 'static>(self) -> Box<T>;
+}
+
+impl UncheckedBoxAny for Box<Any + 'static> {
+    #[inline]
+    unsafe fn downcast_unchecked<T: 'static>(self) -> Box<T> {
+        // Get the raw representation of the trait object
+        let to: TraitObject = *transmute::<&Box<Any>, &TraitObject>(&self);
+
+        // Prevent destructor on self being run
+        forget(self);
 
         // Extract the data pointer
         transmute(to.data)
@@ -88,22 +109,22 @@ impl<'a> UncheckedAnyMutRefExt<'a> for &'a mut Any + 'a {
 /// ```rust
 /// # use anymap::AnyMap;
 /// let mut data = AnyMap::new();
-/// assert_eq!(data.find(), None::<&int>);
+/// assert_eq!(data.get(), None::<&int>);
 /// data.insert(42i);
-/// assert_eq!(data.find(), Some(&42i));
+/// assert_eq!(data.get(), Some(&42i));
 /// data.remove::<int>();
-/// assert_eq!(data.find::<int>(), None);
+/// assert_eq!(data.get::<int>(), None);
 ///
 /// #[deriving(PartialEq, Show)]
 /// struct Foo {
 ///     str: String,
 /// }
 ///
-/// assert_eq!(data.find::<Foo>(), None);
+/// assert_eq!(data.get::<Foo>(), None);
 /// data.insert(Foo { str: "foo".to_string() });
-/// assert_eq!(data.find(), Some(&Foo { str: "foo".to_string() }));
-/// data.find_mut::<Foo>().map(|foo| foo.str.push('t'));
-/// assert_eq!(data.find::<Foo>().unwrap().str.as_slice(), "foot");
+/// assert_eq!(data.get(), Some(&Foo { str: "foo".to_string() }));
+/// data.get_mut::<Foo>().map(|foo| foo.str.push('t'));
+/// assert_eq!(data.get::<Foo>().unwrap().str.as_slice(), "foot");
 /// ```
 ///
 /// Values containing non-static references are not permitted.
@@ -121,25 +142,41 @@ impl AnyMap {
 }
 
 impl AnyMap {
-    /// Retrieve the value stored in the map for the type `T`, if it exists.
+    /// Deprecated: Renamed to `get`.
+    #[deprecated = "Renamed to `get`"]
     pub fn find<T: Any + 'static>(&self) -> Option<&T> {
-        self.data.find(&TypeId::of::<T>()).map(|any| unsafe { any.as_ref_unchecked::<T>() })
+        self.get::<T>()
+    }
+
+    /// Deprecated: Renamed to `get_mut`.
+    #[deprecated = "Renamed to `get_mut`"]
+    pub fn find_mut<T: Any + 'static>(&mut self) -> Option<&mut T> {
+        self.get_mut::<T>()
+    }
+
+    /// Retrieve the value stored in the map for the type `T`, if it exists.
+    pub fn get<T: Any + 'static>(&self) -> Option<&T> {
+        self.data.get(&TypeId::of::<T>())
+            .map(|any| unsafe { any.downcast_ref_unchecked::<T>() })
     }
 
     /// Retrieve a mutable reference to the value stored in the map for the type `T`, if it exists.
-    pub fn find_mut<T: Any + 'static>(&mut self) -> Option<&mut T> {
-        self.data.find_mut(&TypeId::of::<T>()).map(|any| unsafe { any.as_mut_unchecked::<T>() })
+    pub fn get_mut<T: Any + 'static>(&mut self) -> Option<&mut T> {
+        self.data.get_mut(&TypeId::of::<T>())
+            .map(|any| unsafe { any.downcast_mut_unchecked::<T>() })
     }
 
     /// Set the value contained in the map for the type `T`.
-    /// This will override any previous value stored.
-    pub fn insert<T: Any + 'static>(&mut self, value: T) {
-        self.data.insert(TypeId::of::<T>(), box value as Box<Any>);
+    /// If there is a previous value stored, it will be returned.
+    pub fn insert<T: Any + 'static>(&mut self, value: T) -> Option<T> {
+        self.data.insert(TypeId::of::<T>(), box value as Box<Any>)
+            .map(|any| *unsafe { any.downcast_unchecked::<T>() })
     }
 
-    /// Remove the value for the type `T` if it existed.
-    pub fn remove<T: Any + 'static>(&mut self) {
-        self.data.remove(&TypeId::of::<T>());
+    /// Remove and return the value for the type `T` if it existed.
+    pub fn remove<T: Any + 'static>(&mut self) -> Option<T> {
+        self.data.remove(&TypeId::of::<T>())
+            .map(|any| *unsafe { any.downcast_unchecked::<T>() })
     }
 
     /// Does a value of type `T` exist?
@@ -168,29 +205,29 @@ fn bench_insertion(b: &mut ::test::Bencher) {
     b.iter(|| {
         let mut data = AnyMap::new();
         for _ in range(0u, 100) {
-            data.insert(42i);
+            let _ = data.insert(42i);
         }
     })
 }
 
 #[bench]
-fn bench_find_missing(b: &mut ::test::Bencher) {
+fn bench_get_missing(b: &mut ::test::Bencher) {
     b.iter(|| {
         let data = AnyMap::new();
         for _ in range(0u, 100) {
-            assert_eq!(data.find(), None::<&int>);
+            assert_eq!(data.get(), None::<&int>);
         }
     })
 }
 
 #[bench]
-fn bench_find_present(b: &mut ::test::Bencher) {
+fn bench_get_present(b: &mut ::test::Bencher) {
     b.iter(|| {
         let mut data = AnyMap::new();
-        data.insert(42i);
+        let _ = data.insert(42i);
         // These inner loops are a feeble attempt to drown the other factors.
         for _ in range(0u, 100) {
-            assert_eq!(data.find(), Some(&42i));
+            assert_eq!(data.get(), Some(&42i));
         }
     })
 }
