@@ -9,7 +9,7 @@ As another example of such an interface, JavaScript objects are exactly the same
 
 Fortunately, we can do better than these things in Rust. Our type system is quite equal to easy, robust expression of such problems.
 
-The ``AnyMap`` type is a friendly wrapper around a ``HashMap<TypeId, Box<Any>:'static>``, exposing a nice, easy typed interface, perfectly safe and absolutely robust.
+The ``AnyMap`` type is a friendly wrapper around a ``HashMap<TypeId, Box<Any + 'static>>``, exposing a nice, easy typed interface, perfectly safe and absolutely robust.
 
 What this means is that in an ``AnyMap`` you may store zero or one values for every type.
 
