@@ -2,7 +2,7 @@
 
 #![crate_name = "anymap"]
 #![crate_type = "lib"]
-#![feature(default_type_params)]
+#![feature(default_type_params, tuple_indexing)]
 #![warn(unused_qualifications, non_upper_case_globals,
         variant_size_differences, unused_typecasts,
         missing_docs, unused_results)]
@@ -13,9 +13,12 @@ extern crate test;
 use std::any::Any;
 use std::intrinsics::{forget, TypeId};
 use std::collections::HashMap;
+use std::collections::hash_map;
 use std::hash::{Hash, Hasher, Writer};
 use std::mem::{transmute, transmute_copy};
 use std::raw::TraitObject;
+
+pub use Entry::{Vacant, Occupied};
 
 struct TypeIdHasher;
 
@@ -184,6 +187,14 @@ impl AnyMap {
         self.data.contains_key(&TypeId::of::<T>())
     }
 
+    /// Gets the given key's corresponding entry in the map for in-place manipulation
+    pub fn entry<T: Any + 'static>(&mut self) -> Entry<T> {
+        match self.data.entry(TypeId::of::<T>()) {
+            hash_map::Occupied(e) => Occupied(OccupiedEntry { entry: e }),
+            hash_map::Vacant(e) => Vacant(VacantEntry { entry: e }),
+        }
+    }
+
     /// Returns the number of items in the collection.
     pub fn len(&self) -> uint {
         self.data.len()
@@ -197,6 +208,60 @@ impl AnyMap {
     /// Removes all items from the collection.
     pub fn clear(&mut self) {
         self.data.clear();
+    }
+}
+
+/// A view into a single occupied location in a HashMap
+pub struct OccupiedEntry<'a, V: 'a> {
+    entry: hash_map::OccupiedEntry<'a, TypeId, Box<Any + 'static>>,
+}
+
+/// A view into a single empty location in a HashMap
+pub struct VacantEntry<'a, V: 'a> {
+    entry: hash_map::VacantEntry<'a, TypeId, Box<Any + 'static>>,
+}
+
+/// A view into a single location in a map, which may be vacant or occupied
+pub enum Entry<'a, V: 'a> {
+    /// An occupied Entry
+    Occupied(OccupiedEntry<'a, V>),
+    /// A vacant Entry
+    Vacant(VacantEntry<'a, V>),
+}
+
+impl<'a, V: 'static> OccupiedEntry<'a, V> {
+    /// Gets a reference to the value in the entry
+    pub fn get(&self) -> &V {
+        unsafe { self.entry.get().downcast_ref_unchecked() }
+    }
+
+    /// Gets a mutable reference to the value in the entry
+    pub fn get_mut(&mut self) -> &mut V {
+        unsafe { self.entry.get_mut().downcast_mut_unchecked() }
+    }
+
+    /// Converts the OccupiedEntry into a mutable reference to the value in the entry
+    /// with a lifetime bound to the map itself
+    pub fn into_mut(self) -> &'a mut V {
+        unsafe { self.entry.into_mut().downcast_mut_unchecked() }
+    }
+
+    /// Sets the value of the entry, and returns the entry's old value
+    pub fn set(&mut self, value: V) -> V {
+        unsafe { *self.entry.set(box value as Box<Any + 'static>).downcast_unchecked() }
+    }
+
+    /// Takes the value out of the entry, and returns it
+    pub fn take(self) -> V {
+        unsafe { *self.entry.take().downcast_unchecked() }
+    }
+}
+
+impl<'a, V: 'static> VacantEntry<'a, V> {
+    /// Sets the value of the entry with the VacantEntry's key,
+    /// and returns a mutable reference to it
+    pub fn set(self, value: V) -> &'a mut V {
+        unsafe { self.entry.set(box value as Box<Any + 'static>).downcast_mut_unchecked() }
     }
 }
 
@@ -230,4 +295,69 @@ fn bench_get_present(b: &mut ::test::Bencher) {
             assert_eq!(data.get(), Some(&42i));
         }
     })
+}
+
+#[test]
+fn test_entry() {
+    #[deriving(Show, PartialEq)] struct A(int);
+    #[deriving(Show, PartialEq)] struct B(int);
+    #[deriving(Show, PartialEq)] struct C(int);
+    #[deriving(Show, PartialEq)] struct D(int);
+    #[deriving(Show, PartialEq)] struct E(int);
+    #[deriving(Show, PartialEq)] struct F(int);
+    #[deriving(Show, PartialEq)] struct J(int);
+
+    let mut map: AnyMap = AnyMap::new();
+    assert_eq!(map.insert(A(10)), None);
+    assert_eq!(map.insert(B(20)), None);
+    assert_eq!(map.insert(C(30)), None);
+    assert_eq!(map.insert(D(40)), None);
+    assert_eq!(map.insert(E(50)), None);
+    assert_eq!(map.insert(F(60)), None);
+
+    // Existing key (insert)
+    match map.entry::<A>() {
+        Vacant(_) => unreachable!(),
+        Occupied(mut view) => {
+            assert_eq!(view.get(), &A(10));
+            assert_eq!(view.set(A(100)), A(10));
+        }
+    }
+    assert_eq!(map.get::<A>().unwrap(), &A(100));
+    assert_eq!(map.len(), 6);
+
+
+    // Existing key (update)
+    match map.entry::<B>() {
+        Vacant(_) => unreachable!(),
+        Occupied(mut view) => {
+            let v = view.get_mut();
+            let new_v = B(v.0 * 10);
+            *v = new_v;
+        }
+    }
+    assert_eq!(map.get().unwrap(), &B(200));
+    assert_eq!(map.len(), 6);
+
+
+    // Existing key (take)
+    match map.entry::<C>() {
+        Vacant(_) => unreachable!(),
+        Occupied(view) => {
+            assert_eq!(view.take(), C(30));
+        }
+    }
+    assert_eq!(map.get::<C>(), None);
+    assert_eq!(map.len(), 5);
+
+
+    // Inexistent key (insert)
+    match map.entry::<J>() {
+        Occupied(_) => unreachable!(),
+        Vacant(view) => {
+            assert_eq!(*view.set(J(1000)), J(1000));
+        }
+    }
+    assert_eq!(map.get::<J>().unwrap(), &J(1000));
+    assert_eq!(map.len(), 6);
 }
