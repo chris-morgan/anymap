@@ -1,6 +1,6 @@
 [package]
 name = "anymap"
-version = "0.9.0"
+version = "0.9.1"
 authors = [ "Chris Morgan <me@chrismorgan.info>" ]
 
 [lib]
