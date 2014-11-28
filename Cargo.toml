@@ -1,8 +1,11 @@
 [package]
 name = "anymap"
-version = "0.9.1"
-authors = [ "Chris Morgan <me@chrismorgan.info>" ]
-
-[lib]
-name = "anymap"
-path = "src/lib.rs"
+version = "0.9.2"
+authors = ["Chris Morgan <me@chrismorgan.info>"]
+description = "A safe and convenient store for one value of each type"
+#documentation = "http://www.rust-ci.org/chris-morgan/anymap/doc/anymap/index.html"
+#homepage = "https://github.com/chris-morgan/anymap"
+repository = "https://github.com/chris-morgan/anymap"
+readme = "README.md"
+keywords = ["container", "data-structure", "map"]
+license = "MIT/Apache-2.0"
