@@ -167,6 +167,19 @@ impl AnyMap {
             .map(|any| unsafe { any.downcast_mut_unchecked::<T>() })
     }
 
+    /// Retrieve a mutable reference to the value stored in the map for the type `T`, if it exists.
+    /// If value is not found, insert it as v.
+    pub fn find_or_insert<'a, T: 'static>(&'a mut self, v: T) -> &'a mut T {
+        unsafe {self.data.find_or_insert(TypeId::of::<T>(), box v as Box<Any>).as_mut_unchecked::<T>() }
+    }
+
+    /// Retrieve a mutable reference to the value stored in the map for the type `T`, if it exists.
+    /// If value is not found, insert one calculated by f.
+    pub fn find_or_insert_with<'a, T: 'static>(&'a mut self, f: || -> T) -> &'a mut T {
+        let newf = |k: &TypeId| -> Box<Any> { box f() as Box<Any> };
+        unsafe {self.data.find_or_insert_with(TypeId::of::<T>(), newf).as_mut_unchecked::<T>() }
+    }
+
     /// Set the value contained in the map for the type `T`.
     /// If there is a previous value stored, it will be returned.
     pub fn insert<T: Any + 'static>(&mut self, value: T) -> Option<T> {
