@@ -1,6 +1,6 @@
 //! This crate provides the `AnyMap` type, a safe and convenient store for one value of each type.
 
-#![feature(default_type_params, tuple_indexing)]
+#![feature(default_type_params)]
 #![warn(unused_qualifications, non_upper_case_globals,
         variant_size_differences, unused_typecasts,
         missing_docs, unused_results)]
