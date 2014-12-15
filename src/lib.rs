@@ -136,7 +136,7 @@ mod with_clone {
     }
 
     /// TypeId, but implementing Clone.
-    #[deriving(PartialEq, Eq, Show)]
+    #[deriving(PartialEq, Eq, Copy, Show)]
     pub struct TypeId(::std::intrinsics::TypeId);
 
     impl TypeId {
