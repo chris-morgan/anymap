@@ -13,7 +13,7 @@ use std::intrinsics::{forget, TypeId};
 use std::collections::HashMap;
 use std::collections::hash_map;
 use std::hash::{Hash, Hasher, Writer};
-use std::mem::{transmute, transmute_copy};
+use std::mem::transmute;
 use std::raw::TraitObject;
 
 pub use Entry::{Vacant, Occupied};
@@ -54,11 +54,11 @@ trait UncheckedAnyRefExt<'a> {
     unsafe fn downcast_ref_unchecked<T: 'static>(self) -> &'a T;
 }
 
-impl<'a> UncheckedAnyRefExt<'a> for &'a (Any + 'a) {
+impl<'a> UncheckedAnyRefExt<'a> for &'a Any {
     #[inline]
     unsafe fn downcast_ref_unchecked<T: 'static>(self) -> &'a T {
         // Get the raw representation of the trait object
-        let to: TraitObject = transmute_copy(&self);
+        let to: TraitObject = transmute(self);
 
         // Extract the data pointer
         transmute(to.data)
@@ -72,11 +72,11 @@ trait UncheckedAnyMutRefExt<'a> {
     unsafe fn downcast_mut_unchecked<T: 'static>(self) -> &'a mut T;
 }
 
-impl<'a> UncheckedAnyMutRefExt<'a> for &'a mut (Any + 'a) {
+impl<'a> UncheckedAnyMutRefExt<'a> for &'a mut Any {
     #[inline]
     unsafe fn downcast_mut_unchecked<T: 'static>(self) -> &'a mut T {
         // Get the raw representation of the trait object
-        let to: TraitObject = transmute_copy(&self);
+        let to: TraitObject = transmute(self);
 
         // Extract the data pointer
         transmute(to.data)
