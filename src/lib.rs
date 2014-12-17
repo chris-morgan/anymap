@@ -209,12 +209,12 @@ impl AnyMap {
     }
 }
 
-/// A view into a single occupied location in a HashMap
+/// A view into a single occupied location in an AnyMap
 pub struct OccupiedEntry<'a, V: 'a> {
     entry: hash_map::OccupiedEntry<'a, TypeId, Box<Any + 'static>>,
 }
 
-/// A view into a single empty location in a HashMap
+/// A view into a single empty location in an AnyMap
 pub struct VacantEntry<'a, V: 'a> {
     entry: hash_map::VacantEntry<'a, TypeId, Box<Any + 'static>>,
 }
