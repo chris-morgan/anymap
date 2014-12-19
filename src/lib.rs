@@ -391,7 +391,7 @@ fn test_entry() {
 
     // Cloning works as intended
     let map2 = map.clone();
-    assert_eq!(map2.len(), 6)
+    assert_eq!(map2.len(), 6);
     assert_eq!(map2.get::<A>(), Some(&A(100)));
     assert_eq!(map2.get::<B>(), Some(&B(200)));
     assert_eq!(map2.get::<C>(), None);
