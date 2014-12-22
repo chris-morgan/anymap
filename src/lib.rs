@@ -188,8 +188,8 @@ impl AnyMap {
     /// Gets the given key's corresponding entry in the map for in-place manipulation
     pub fn entry<T: Any + 'static>(&mut self) -> Entry<T> {
         match self.data.entry(TypeId::of::<T>()) {
-            hash_map::Occupied(e) => Occupied(OccupiedEntry { entry: e }),
-            hash_map::Vacant(e) => Vacant(VacantEntry { entry: e }),
+            hash_map::Entry::Occupied(e) => Occupied(OccupiedEntry { entry: e }),
+            hash_map::Entry::Vacant(e) => Vacant(VacantEntry { entry: e }),
         }
     }
 
