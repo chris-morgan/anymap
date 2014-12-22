@@ -16,8 +16,6 @@ use std::hash::{Hash, Hasher, Writer};
 use std::mem::transmute;
 use std::raw::TraitObject;
 
-pub use Entry::{Vacant, Occupied};
-
 struct TypeIdHasher;
 
 struct TypeIdState {
@@ -188,8 +186,8 @@ impl AnyMap {
     /// Gets the given key's corresponding entry in the map for in-place manipulation
     pub fn entry<T: Any + 'static>(&mut self) -> Entry<T> {
         match self.data.entry(TypeId::of::<T>()) {
-            hash_map::Entry::Occupied(e) => Occupied(OccupiedEntry { entry: e }),
-            hash_map::Entry::Vacant(e) => Vacant(VacantEntry { entry: e }),
+            hash_map::Entry::Occupied(e) => Entry::Occupied(OccupiedEntry { entry: e }),
+            hash_map::Entry::Vacant(e) => Entry::Vacant(VacantEntry { entry: e }),
         }
     }
 
@@ -315,8 +313,8 @@ fn test_entry() {
 
     // Existing key (insert)
     match map.entry::<A>() {
-        Vacant(_) => unreachable!(),
-        Occupied(mut view) => {
+        Entry::Vacant(_) => unreachable!(),
+        Entry::Occupied(mut view) => {
             assert_eq!(view.get(), &A(10));
             assert_eq!(view.set(A(100)), A(10));
         }
@@ -327,8 +325,8 @@ fn test_entry() {
 
     // Existing key (update)
     match map.entry::<B>() {
-        Vacant(_) => unreachable!(),
-        Occupied(mut view) => {
+        Entry::Vacant(_) => unreachable!(),
+        Entry::Occupied(mut view) => {
             let v = view.get_mut();
             let new_v = B(v.0 * 10);
             *v = new_v;
@@ -340,8 +338,8 @@ fn test_entry() {
 
     // Existing key (take)
     match map.entry::<C>() {
-        Vacant(_) => unreachable!(),
-        Occupied(view) => {
+        Entry::Vacant(_) => unreachable!(),
+        Entry::Occupied(view) => {
             assert_eq!(view.take(), C(30));
         }
     }
@@ -351,8 +349,8 @@ fn test_entry() {
 
     // Inexistent key (insert)
     match map.entry::<J>() {
-        Occupied(_) => unreachable!(),
-        Vacant(view) => {
+        Entry::Occupied(_) => unreachable!(),
+        Entry::Vacant(view) => {
             assert_eq!(*view.set(J(1000)), J(1000));
         }
     }
