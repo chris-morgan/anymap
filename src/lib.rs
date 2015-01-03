@@ -114,7 +114,7 @@ impl UncheckedBoxAny for Box<Any + 'static> {
 /// data.remove::<int>();
 /// assert_eq!(data.get::<int>(), None);
 ///
-/// #[deriving(PartialEq, Show)]
+/// #[derive(PartialEq, Show)]
 /// struct Foo {
 ///     str: String,
 /// }
@@ -295,13 +295,13 @@ fn bench_get_present(b: &mut ::test::Bencher) {
 
 #[test]
 fn test_entry() {
-    #[deriving(Show, PartialEq)] struct A(int);
-    #[deriving(Show, PartialEq)] struct B(int);
-    #[deriving(Show, PartialEq)] struct C(int);
-    #[deriving(Show, PartialEq)] struct D(int);
-    #[deriving(Show, PartialEq)] struct E(int);
-    #[deriving(Show, PartialEq)] struct F(int);
-    #[deriving(Show, PartialEq)] struct J(int);
+    #[derive(Show, PartialEq)] struct A(int);
+    #[derive(Show, PartialEq)] struct B(int);
+    #[derive(Show, PartialEq)] struct C(int);
+    #[derive(Show, PartialEq)] struct D(int);
+    #[derive(Show, PartialEq)] struct E(int);
+    #[derive(Show, PartialEq)] struct F(int);
+    #[derive(Show, PartialEq)] struct J(int);
 
     let mut map: AnyMap = AnyMap::new();
     assert_eq!(map.insert(A(10)), None);
