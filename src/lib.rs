@@ -3,6 +3,7 @@
 #![warn(unused_qualifications, non_upper_case_globals,
         variant_size_differences, unused_typecasts,
         missing_docs, unused_results)]
+#![allow(unstable)]
 
 #[cfg(test)]
 extern crate test;
@@ -11,17 +12,26 @@ use std::any::Any;
 use std::intrinsics::{forget, TypeId};
 use std::collections::HashMap;
 use std::collections::hash_map;
-use std::hash::{Hash, Hasher, Writer};
+use std::hash::{Hasher, Writer};
+use std::collections::hash_state::HashState;
 use std::mem::transmute;
 use std::raw::TraitObject;
 
-struct TypeIdHasher;
-
-struct TypeIdState {
+struct TypeIdHasher {
     value: u64,
 }
 
-impl Writer for TypeIdState {
+struct TypeIdState;
+
+impl HashState for TypeIdState {
+    type Hasher = TypeIdHasher;
+
+    fn hasher(&self) -> TypeIdHasher {
+        TypeIdHasher { value: 0 }
+    }
+}
+
+impl Writer for TypeIdHasher {
     #[inline(always)]
     fn write(&mut self, bytes: &[u8]) {
         // This expects to receive one and exactly one 64-bit value
@@ -34,14 +44,12 @@ impl Writer for TypeIdState {
     }
 }
 
-impl Hasher<TypeIdState> for TypeIdHasher {
-    fn hash<T: ?Sized + Hash<TypeIdState>>(&self, value: &T) -> u64 {
-        let mut state = TypeIdState {
-            value: 0,
-        };
-        value.hash(&mut state);
-        state.value
-    }
+impl Hasher for TypeIdHasher {
+    type Output = u64;
+
+    fn reset(&mut self) { }
+
+    fn finish(&self) -> u64 { self.value }
 }
 
 /// An extension of `AnyRefExt` allowing unchecked downcasting of trait objects to `&T`.
@@ -107,11 +115,11 @@ impl UncheckedBoxAny for Box<Any + 'static> {
 /// ```rust
 /// # use anymap::AnyMap;
 /// let mut data = AnyMap::new();
-/// assert_eq!(data.get(), None::<&int>);
-/// data.insert(42i);
-/// assert_eq!(data.get(), Some(&42i));
-/// data.remove::<int>();
-/// assert_eq!(data.get::<int>(), None);
+/// assert_eq!(data.get(), None::<&i32>);
+/// data.insert(42i32);
+/// assert_eq!(data.get(), Some(&42i32));
+/// data.remove::<i32>();
+/// assert_eq!(data.get::<i32>(), None);
 ///
 /// #[derive(PartialEq, Show)]
 /// struct Foo {
@@ -119,16 +127,16 @@ impl UncheckedBoxAny for Box<Any + 'static> {
 /// }
 ///
 /// assert_eq!(data.get::<Foo>(), None);
-/// data.insert(Foo { str: "foo".to_string() });
-/// assert_eq!(data.get(), Some(&Foo { str: "foo".to_string() }));
+/// data.insert(Foo { str: format!("foo") });
+/// assert_eq!(data.get(), Some(&Foo { str: format!("foo") }));
 /// data.get_mut::<Foo>().map(|foo| foo.str.push('t'));
-/// assert_eq!(data.get::<Foo>().unwrap().str.as_slice(), "foot");
+/// assert_eq!(&*data.get::<Foo>().unwrap().str, "foot");
 /// ```
 ///
 /// Values containing non-static references are not permitted.
 #[stable]
 pub struct AnyMap {
-    data: HashMap<TypeId, Box<Any + 'static>, TypeIdHasher>,
+    data: HashMap<TypeId, Box<Any + 'static>, TypeIdState>,
 }
 
 impl AnyMap {
@@ -137,23 +145,23 @@ impl AnyMap {
     #[stable]
     pub fn new() -> AnyMap {
         AnyMap {
-            data: HashMap::with_hasher(TypeIdHasher),
+            data: HashMap::with_hash_state(TypeIdState),
         }
     }
 
     /// Creates an empty AnyMap with the given initial capacity.
     #[inline]
     #[stable]
-    pub fn with_capcity(capacity: uint) -> AnyMap {
+    pub fn with_capcity(capacity: usize) -> AnyMap {
         AnyMap {
-            data: HashMap::with_capacity_and_hasher(capacity, TypeIdHasher),
+            data: HashMap::with_capacity_and_hash_state(capacity, TypeIdState),
         }
     }
 
     /// Returns the number of elements the collection can hold without reallocating.
     #[inline]
     #[stable]
-    pub fn capacity(&self) -> uint {
+    pub fn capacity(&self) -> usize {
         self.data.capacity()
     }
 
@@ -163,10 +171,10 @@ impl AnyMap {
     ///
     /// # Panics
     ///
-    /// Panics if the new allocation size overflows `uint`.
+    /// Panics if the new allocation size overflows `usize`.
     #[inline]
     #[stable]
-    pub fn reserve(&mut self, additional: uint) {
+    pub fn reserve(&mut self, additional: usize) {
         self.data.reserve(additional)
     }
 
@@ -237,7 +245,7 @@ impl AnyMap {
     /// Otherwise, `None` is returned.
     #[stable]
     pub fn insert<T: Any + 'static>(&mut self, value: T) -> Option<T> {
-        self.data.insert(TypeId::of::<T>(), box value as Box<Any>)
+        self.data.insert(TypeId::of::<T>(), Box::new(value) as Box<Any>)
             .map(|any| *unsafe { any.downcast_unchecked::<T>() })
     }
 
@@ -267,7 +275,7 @@ impl AnyMap {
     /// Returns the number of items in the collection.
     #[inline]
     #[stable]
-    pub fn len(&self) -> uint {
+    pub fn len(&self) -> usize {
         self.data.len()
     }
 
@@ -354,7 +362,7 @@ impl<'a, V: 'static> OccupiedEntry<'a, V> {
     #[stable]
     /// Sets the value of the entry, and returns the entry's old value
     pub fn insert(&mut self, value: V) -> V {
-        unsafe { *self.entry.insert(box value as Box<Any + 'static>).downcast_unchecked() }
+        unsafe { *self.entry.insert(Box::new(value) as Box<Any + 'static>).downcast_unchecked() }
     }
 
     #[stable]
@@ -369,7 +377,7 @@ impl<'a, V: 'static> VacantEntry<'a, V> {
     /// Sets the value of the entry with the VacantEntry's key,
     /// and returns a mutable reference to it
     pub fn insert(self, value: V) -> &'a mut V {
-        unsafe { self.entry.insert(box value as Box<Any + 'static>).downcast_mut_unchecked() }
+        unsafe { self.entry.insert(Box::new(value) as Box<Any + 'static>).downcast_mut_unchecked() }
     }
 }
 
@@ -408,7 +416,7 @@ impl<'a> Iterator for Iter<'a> {
     }
 
     #[inline]
-    fn size_hint(&self) -> (uint, Option<uint>) { self.inner.size_hint() }
+    fn size_hint(&self) -> (usize, Option<usize>) { self.inner.size_hint() }
 }
 
 #[stable]
@@ -421,7 +429,7 @@ impl<'a> Iterator for IterMut<'a> {
     }
 
     #[inline]
-    fn size_hint(&self) -> (uint, Option<uint>) { self.inner.size_hint() }
+    fn size_hint(&self) -> (usize, Option<usize>) { self.inner.size_hint() }
 }
 
 #[stable]
@@ -434,7 +442,7 @@ impl<'a> Iterator for Drain<'a> {
     }
 
     #[inline]
-    fn size_hint(&self) -> (uint, Option<uint>) { self.inner.size_hint() }
+    fn size_hint(&self) -> (usize, Option<usize>) { self.inner.size_hint() }
 }
 
 #[stable]
@@ -447,15 +455,15 @@ impl Iterator for IntoIter {
     }
 
     #[inline]
-    fn size_hint(&self) -> (uint, Option<uint>) { self.inner.size_hint() }
+    fn size_hint(&self) -> (usize, Option<usize>) { self.inner.size_hint() }
 }
 
 #[bench]
 fn bench_insertion(b: &mut ::test::Bencher) {
     b.iter(|| {
         let mut data = AnyMap::new();
-        for _ in range(0u, 100) {
-            let _ = data.insert(42i);
+        for _ in range(0, 100) {
+            let _ = data.insert(42i32);
         }
     })
 }
@@ -464,8 +472,8 @@ fn bench_insertion(b: &mut ::test::Bencher) {
 fn bench_get_missing(b: &mut ::test::Bencher) {
     b.iter(|| {
         let data = AnyMap::new();
-        for _ in range(0u, 100) {
-            assert_eq!(data.get(), None::<&int>);
+        for _ in range(0, 100) {
+            assert_eq!(data.get(), None::<&i32>);
         }
     })
 }
@@ -474,23 +482,23 @@ fn bench_get_missing(b: &mut ::test::Bencher) {
 fn bench_get_present(b: &mut ::test::Bencher) {
     b.iter(|| {
         let mut data = AnyMap::new();
-        let _ = data.insert(42i);
+        let _ = data.insert(42i32);
         // These inner loops are a feeble attempt to drown the other factors.
-        for _ in range(0u, 100) {
-            assert_eq!(data.get(), Some(&42i));
+        for _ in range(0, 100) {
+            assert_eq!(data.get(), Some(&42i32));
         }
     })
 }
 
 #[test]
 fn test_entry() {
-    #[derive(Show, PartialEq)] struct A(int);
-    #[derive(Show, PartialEq)] struct B(int);
-    #[derive(Show, PartialEq)] struct C(int);
-    #[derive(Show, PartialEq)] struct D(int);
-    #[derive(Show, PartialEq)] struct E(int);
-    #[derive(Show, PartialEq)] struct F(int);
-    #[derive(Show, PartialEq)] struct J(int);
+    #[derive(Show, PartialEq)] struct A(i32);
+    #[derive(Show, PartialEq)] struct B(i32);
+    #[derive(Show, PartialEq)] struct C(i32);
+    #[derive(Show, PartialEq)] struct D(i32);
+    #[derive(Show, PartialEq)] struct E(i32);
+    #[derive(Show, PartialEq)] struct F(i32);
+    #[derive(Show, PartialEq)] struct J(i32);
 
     let mut map: AnyMap = AnyMap::new();
     assert_eq!(map.insert(A(10)), None);
