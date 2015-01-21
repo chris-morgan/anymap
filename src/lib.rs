@@ -8,8 +8,8 @@
 #[cfg(test)]
 extern crate test;
 
-use std::any::Any;
-use std::intrinsics::{forget, TypeId};
+use std::any::{Any, TypeId};
+use std::mem::forget;
 use std::collections::HashMap;
 use std::collections::hash_map;
 use std::hash::{Hasher, Writer};
