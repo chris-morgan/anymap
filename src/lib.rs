@@ -1,9 +1,10 @@
 //! This crate provides the `AnyMap` type, a safe and convenient store for one value of each type.
 
+#![feature(core, std_misc, hash)]
+#![cfg_attr(test, feature(test))]
 #![warn(unused_qualifications, non_upper_case_globals,
         variant_size_differences, unused_typecasts,
         missing_docs, unused_results)]
-#![allow(unstable)]
 
 #[cfg(test)]
 extern crate test;
@@ -121,7 +122,7 @@ impl UncheckedBoxAny for Box<Any + 'static> {
 /// data.remove::<i32>();
 /// assert_eq!(data.get::<i32>(), None);
 ///
-/// #[derive(PartialEq, Show)]
+/// #[derive(PartialEq, Debug)]
 /// struct Foo {
 ///     str: String,
 /// }
@@ -492,13 +493,13 @@ fn bench_get_present(b: &mut ::test::Bencher) {
 
 #[test]
 fn test_entry() {
-    #[derive(Show, PartialEq)] struct A(i32);
-    #[derive(Show, PartialEq)] struct B(i32);
-    #[derive(Show, PartialEq)] struct C(i32);
-    #[derive(Show, PartialEq)] struct D(i32);
-    #[derive(Show, PartialEq)] struct E(i32);
-    #[derive(Show, PartialEq)] struct F(i32);
-    #[derive(Show, PartialEq)] struct J(i32);
+    #[derive(Debug, PartialEq)] struct A(i32);
+    #[derive(Debug, PartialEq)] struct B(i32);
+    #[derive(Debug, PartialEq)] struct C(i32);
+    #[derive(Debug, PartialEq)] struct D(i32);
+    #[derive(Debug, PartialEq)] struct E(i32);
+    #[derive(Debug, PartialEq)] struct F(i32);
+    #[derive(Debug, PartialEq)] struct J(i32);
 
     let mut map: AnyMap = AnyMap::new();
     assert_eq!(map.insert(A(10)), None);
