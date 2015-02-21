@@ -13,10 +13,11 @@ use std::any::{Any, TypeId};
 use std::mem::forget;
 use std::collections::HashMap;
 use std::collections::hash_map;
-use std::hash::{Hasher, Writer};
+use std::hash::Hasher;
 use std::collections::hash_state::HashState;
 use std::mem::transmute;
 use std::raw::TraitObject;
+use std::marker::PhantomData;
 
 struct TypeIdHasher {
     value: u64,
@@ -32,7 +33,7 @@ impl HashState for TypeIdState {
     }
 }
 
-impl Writer for TypeIdHasher {
+impl Hasher for TypeIdHasher {
     #[inline(always)]
     fn write(&mut self, bytes: &[u8]) {
         // This expects to receive one and exactly one 64-bit value
@@ -43,12 +44,6 @@ impl Writer for TypeIdHasher {
                                                  1)
         }
     }
-}
-
-impl Hasher for TypeIdHasher {
-    type Output = u64;
-
-    fn reset(&mut self) { }
 
     fn finish(&self) -> u64 { self.value }
 }
@@ -268,8 +263,10 @@ impl AnyMap {
     #[stable]
     pub fn entry<T: Any + 'static>(&mut self) -> Entry<T> {
         match self.data.entry(TypeId::of::<T>()) {
-            hash_map::Entry::Occupied(e) => Entry::Occupied(OccupiedEntry { entry: e }),
-            hash_map::Entry::Vacant(e) => Entry::Vacant(VacantEntry { entry: e }),
+            hash_map::Entry::Occupied(e) =>
+                Entry::Occupied(OccupiedEntry { entry: e, phantom: PhantomData }),
+            hash_map::Entry::Vacant(e) =>
+                Entry::Vacant(VacantEntry { entry: e, phantom: PhantomData }),
         }
     }
 
@@ -312,12 +309,14 @@ impl AnyMap {
 #[stable]
 pub struct OccupiedEntry<'a, V: 'a> {
     entry: hash_map::OccupiedEntry<'a, TypeId, Box<Any + 'static>>,
+    phantom: PhantomData<V>,
 }
 
 /// A view into a single empty location in an AnyMap
 #[stable]
 pub struct VacantEntry<'a, V: 'a> {
     entry: hash_map::VacantEntry<'a, TypeId, Box<Any + 'static>>,
+    phantom: PhantomData<V>,
 }
 
 /// A view into a single location in an AnyMap, which may be vacant or occupied
