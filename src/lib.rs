@@ -39,9 +39,7 @@ impl Hasher for TypeIdHasher {
         // This expects to receive one and exactly one 64-bit value
         debug_assert!(bytes.len() == 8);
         unsafe {
-            std::ptr::copy_nonoverlapping_memory(&mut self.value,
-                                                 transmute(&bytes[0]),
-                                                 1)
+            std::ptr::copy_nonoverlapping(&mut self.value, transmute(&bytes[0]), 1)
         }
     }
 
