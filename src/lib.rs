@@ -129,7 +129,6 @@ impl UncheckedBoxAny for Box<Any + 'static> {
 /// ```
 ///
 /// Values containing non-static references are not permitted.
-#[stable]
 pub struct AnyMap {
     data: HashMap<TypeId, Box<Any + 'static>, TypeIdState>,
 }
@@ -137,7 +136,6 @@ pub struct AnyMap {
 impl AnyMap {
     /// Construct a new `AnyMap`.
     #[inline]
-    #[stable]
     pub fn new() -> AnyMap {
         AnyMap {
             data: HashMap::with_hash_state(TypeIdState),
@@ -146,7 +144,6 @@ impl AnyMap {
 
     /// Creates an empty AnyMap with the given initial capacity.
     #[inline]
-    #[stable]
     pub fn with_capcity(capacity: usize) -> AnyMap {
         AnyMap {
             data: HashMap::with_capacity_and_hash_state(capacity, TypeIdState),
@@ -155,7 +152,6 @@ impl AnyMap {
 
     /// Returns the number of elements the collection can hold without reallocating.
     #[inline]
-    #[stable]
     pub fn capacity(&self) -> usize {
         self.data.capacity()
     }
@@ -168,7 +164,6 @@ impl AnyMap {
     ///
     /// Panics if the new allocation size overflows `usize`.
     #[inline]
-    #[stable]
     pub fn reserve(&mut self, additional: usize) {
         self.data.reserve(additional)
     }
@@ -177,7 +172,6 @@ impl AnyMap {
     /// down as much as possible while maintaining the internal rules
     /// and possibly leaving some space in accordance with the resize policy.
     #[inline]
-    #[stable]
     pub fn shrink_to_fit(&mut self) {
         self.data.shrink_to_fit()
     }
@@ -187,7 +181,6 @@ impl AnyMap {
     ///
     /// This is probably not a great deal of use.
     #[inline]
-    #[stable]
     pub fn iter(&self) -> Iter {
         Iter {
             inner: self.data.iter(),
@@ -199,7 +192,6 @@ impl AnyMap {
     ///
     /// This is probably not a great deal of use.
     #[inline]
-    #[stable]
     pub fn iter_mut(&mut self) -> IterMut {
         IterMut {
             inner: self.data.iter_mut(),
@@ -213,7 +205,6 @@ impl AnyMap {
     ///
     /// Iterator element type is `Box<Any>`.
     #[inline]
-    #[stable]
     pub fn into_iter(self) -> IntoIter {
         IntoIter {
             inner: self.data.into_iter(),
@@ -221,7 +212,6 @@ impl AnyMap {
     }
 
     /// Returns a reference to the value stored in the collection for the type `T`, if it exists.
-    #[stable]
     pub fn get<T: Any + 'static>(&self) -> Option<&T> {
         self.data.get(&TypeId::of::<T>())
             .map(|any| unsafe { any.downcast_ref_unchecked::<T>() })
@@ -229,7 +219,6 @@ impl AnyMap {
 
     /// Returns a mutable reference to the value stored in the collection for the type `T`,
     /// if it exists.
-    #[stable]
     pub fn get_mut<T: Any + 'static>(&mut self) -> Option<&mut T> {
         self.data.get_mut(&TypeId::of::<T>())
             .map(|any| unsafe { any.downcast_mut_unchecked::<T>() })
@@ -238,7 +227,6 @@ impl AnyMap {
     /// Sets the value stored in the collection for the type `T`.
     /// If the collection already had a value of type `T`, that value is returned.
     /// Otherwise, `None` is returned.
-    #[stable]
     pub fn insert<T: Any + 'static>(&mut self, value: T) -> Option<T> {
         self.data.insert(TypeId::of::<T>(), Box::new(value) as Box<Any>)
             .map(|any| *unsafe { any.downcast_unchecked::<T>() })
@@ -246,20 +234,17 @@ impl AnyMap {
 
     /// Removes the `T` value from the collection,
     /// returning it if there was one or `None` if there was not.
-    #[stable]
     pub fn remove<T: Any + 'static>(&mut self) -> Option<T> {
         self.data.remove(&TypeId::of::<T>())
             .map(|any| *unsafe { any.downcast_unchecked::<T>() })
     }
 
     /// Returns true if the collection contains a value of type `T`.
-    #[stable]
     pub fn contains<T: Any + 'static>(&self) -> bool {
         self.data.contains_key(&TypeId::of::<T>())
     }
 
     /// Gets the entry for the given type in the collection for in-place manipulation
-    #[stable]
     pub fn entry<T: Any + 'static>(&mut self) -> Entry<T> {
         match self.data.entry(TypeId::of::<T>()) {
             hash_map::Entry::Occupied(e) => Entry::Occupied(OccupiedEntry {
@@ -275,14 +260,12 @@ impl AnyMap {
 
     /// Returns the number of items in the collection.
     #[inline]
-    #[stable]
     pub fn len(&self) -> usize {
         self.data.len()
     }
 
     /// Returns true if there are no items in the collection.
     #[inline]
-    #[stable]
     pub fn is_empty(&self) -> bool {
         self.data.is_empty()
     }
@@ -293,7 +276,6 @@ impl AnyMap {
     ///
     /// Keeps the allocated memory for reuse.
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn drain(&mut self) -> Drain {
         Drain {
             inner: self.data.drain(),
@@ -302,28 +284,24 @@ impl AnyMap {
 
     /// Removes all items from the collection. Keeps the allocated memory for reuse.
     #[inline]
-    #[stable]
     pub fn clear(&mut self) {
         self.data.clear();
     }
 }
 
 /// A view into a single occupied location in an AnyMap
-#[stable]
 pub struct OccupiedEntry<'a, V: 'a> {
     entry: hash_map::OccupiedEntry<'a, TypeId, Box<Any + 'static>>,
     type_: PhantomData<V>,
 }
 
 /// A view into a single empty location in an AnyMap
-#[stable]
 pub struct VacantEntry<'a, V: 'a> {
     entry: hash_map::VacantEntry<'a, TypeId, Box<Any + 'static>>,
     type_: PhantomData<V>,
 }
 
 /// A view into a single location in an AnyMap, which may be vacant or occupied
-#[stable]
 pub enum Entry<'a, V: 'a> {
     /// An occupied Entry
     Occupied(OccupiedEntry<'a, V>),
@@ -332,7 +310,6 @@ pub enum Entry<'a, V: 'a> {
 }
 
 impl<'a, V: 'static + Clone> Entry<'a, V> {
-    #[unstable = "matches collection reform v2 specification, waiting for dust to settle"]
     /// Returns a mutable reference to the entry if occupied, or the VacantEntry if vacant
     pub fn get(self) -> Result<&'a mut V, VacantEntry<'a, V>> {
         match self {
@@ -343,32 +320,27 @@ impl<'a, V: 'static + Clone> Entry<'a, V> {
 }
 
 impl<'a, V: 'static> OccupiedEntry<'a, V> {
-    #[stable]
     /// Gets a reference to the value in the entry
     pub fn get(&self) -> &V {
         unsafe { self.entry.get().downcast_ref_unchecked() }
     }
 
-    #[stable]
     /// Gets a mutable reference to the value in the entry
     pub fn get_mut(&mut self) -> &mut V {
         unsafe { self.entry.get_mut().downcast_mut_unchecked() }
     }
 
-    #[stable]
     /// Converts the OccupiedEntry into a mutable reference to the value in the entry
     /// with a lifetime bound to the collection itself
     pub fn into_mut(self) -> &'a mut V {
         unsafe { self.entry.into_mut().downcast_mut_unchecked() }
     }
 
-    #[stable]
     /// Sets the value of the entry, and returns the entry's old value
     pub fn insert(&mut self, value: V) -> V {
         unsafe { *self.entry.insert(Box::new(value) as Box<Any + 'static>).downcast_unchecked() }
     }
 
-    #[stable]
     /// Takes the value out of the entry, and returns it
     pub fn remove(self) -> V {
         unsafe { *self.entry.remove().downcast_unchecked() }
@@ -376,7 +348,6 @@ impl<'a, V: 'static> OccupiedEntry<'a, V> {
 }
 
 impl<'a, V: 'static> VacantEntry<'a, V> {
-    #[stable]
     /// Sets the value of the entry with the VacantEntry's key,
     /// and returns a mutable reference to it
     pub fn insert(self, value: V) -> &'a mut V {
@@ -385,31 +356,26 @@ impl<'a, V: 'static> VacantEntry<'a, V> {
 }
 
 /// `AnyMap` iterator.
-#[stable]
 #[derive(Clone)]
 pub struct Iter<'a> {
     inner: hash_map::Iter<'a, TypeId, Box<Any + 'static>>,
 }
 
 /// `AnyMap` mutable references iterator.
-#[stable]
 pub struct IterMut<'a> {
     inner: hash_map::IterMut<'a, TypeId, Box<Any + 'static>>,
 }
 
 /// `AnyMap` draining iterator.
-#[unstable = "matches collection reform specification, waiting for dust to settle"]
 pub struct Drain<'a> {
     inner: hash_map::Drain<'a, TypeId, Box<Any + 'static>>,
 }
 
 /// `AnyMap` move iterator.
-#[stable]
 pub struct IntoIter {
     inner: hash_map::IntoIter<TypeId, Box<Any + 'static>>,
 }
 
-#[stable]
 impl<'a> Iterator for Iter<'a> {
     type Item = &'a Any;
 
@@ -422,7 +388,6 @@ impl<'a> Iterator for Iter<'a> {
     fn size_hint(&self) -> (usize, Option<usize>) { self.inner.size_hint() }
 }
 
-#[stable]
 impl<'a> Iterator for IterMut<'a> {
     type Item = &'a mut Any;
 
@@ -435,7 +400,6 @@ impl<'a> Iterator for IterMut<'a> {
     fn size_hint(&self) -> (usize, Option<usize>) { self.inner.size_hint() }
 }
 
-#[stable]
 impl<'a> Iterator for Drain<'a> {
     type Item = Box<Any + 'static>;
 
@@ -448,7 +412,6 @@ impl<'a> Iterator for Drain<'a> {
     fn size_hint(&self) -> (usize, Option<usize>) { self.inner.size_hint() }
 }
 
-#[stable]
 impl Iterator for IntoIter {
     type Item = Box<Any + 'static>;
 
