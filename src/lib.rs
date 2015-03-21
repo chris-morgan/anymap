@@ -428,8 +428,8 @@ impl Iterator for IntoIter {
 fn bench_insertion(b: &mut ::test::Bencher) {
     b.iter(|| {
         let mut data = AnyMap::new();
-        for _ in range(0, 100) {
-            let _ = data.insert(42i32);
+        for _ in 0..100 {
+            let _ = data.insert(42);
         }
     })
 }
@@ -438,7 +438,7 @@ fn bench_insertion(b: &mut ::test::Bencher) {
 fn bench_get_missing(b: &mut ::test::Bencher) {
     b.iter(|| {
         let data = AnyMap::new();
-        for _ in range(0, 100) {
+        for _ in 0..100 {
             assert_eq!(data.get(), None::<&i32>);
         }
     })
@@ -448,10 +448,10 @@ fn bench_get_missing(b: &mut ::test::Bencher) {
 fn bench_get_present(b: &mut ::test::Bencher) {
     b.iter(|| {
         let mut data = AnyMap::new();
-        let _ = data.insert(42i32);
+        let _ = data.insert(42);
         // These inner loops are a feeble attempt to drown the other factors.
-        for _ in range(0, 100) {
-            assert_eq!(data.get(), Some(&42i32));
+        for _ in 0..100 {
+            assert_eq!(data.get(), Some(&42));
         }
     })
 }
