@@ -90,7 +90,7 @@ trait UncheckedBoxAny {
     unsafe fn downcast_unchecked<T: 'static>(self) -> Box<T>;
 }
 
-impl UncheckedBoxAny for Box<Any + 'static> {
+impl UncheckedBoxAny for Box<Any> {
     #[inline]
     unsafe fn downcast_unchecked<T: 'static>(self) -> Box<T> {
         // Get the raw representation of the trait object
@@ -130,7 +130,7 @@ impl UncheckedBoxAny for Box<Any + 'static> {
 ///
 /// Values containing non-static references are not permitted.
 pub struct AnyMap {
-    data: HashMap<TypeId, Box<Any + 'static>, TypeIdState>,
+    data: HashMap<TypeId, Box<Any>, TypeIdState>,
 }
 
 impl AnyMap {
@@ -212,14 +212,14 @@ impl AnyMap {
     }
 
     /// Returns a reference to the value stored in the collection for the type `T`, if it exists.
-    pub fn get<T: Any + 'static>(&self) -> Option<&T> {
+    pub fn get<T: Any>(&self) -> Option<&T> {
         self.data.get(&TypeId::of::<T>())
             .map(|any| unsafe { any.downcast_ref_unchecked::<T>() })
     }
 
     /// Returns a mutable reference to the value stored in the collection for the type `T`,
     /// if it exists.
-    pub fn get_mut<T: Any + 'static>(&mut self) -> Option<&mut T> {
+    pub fn get_mut<T: Any>(&mut self) -> Option<&mut T> {
         self.data.get_mut(&TypeId::of::<T>())
             .map(|any| unsafe { any.downcast_mut_unchecked::<T>() })
     }
@@ -227,25 +227,25 @@ impl AnyMap {
     /// Sets the value stored in the collection for the type `T`.
     /// If the collection already had a value of type `T`, that value is returned.
     /// Otherwise, `None` is returned.
-    pub fn insert<T: Any + 'static>(&mut self, value: T) -> Option<T> {
-        self.data.insert(TypeId::of::<T>(), Box::new(value) as Box<Any>)
+    pub fn insert<T: Any>(&mut self, value: T) -> Option<T> {
+        self.data.insert(TypeId::of::<T>(), Box::new(value))
             .map(|any| *unsafe { any.downcast_unchecked::<T>() })
     }
 
     /// Removes the `T` value from the collection,
     /// returning it if there was one or `None` if there was not.
-    pub fn remove<T: Any + 'static>(&mut self) -> Option<T> {
+    pub fn remove<T: Any>(&mut self) -> Option<T> {
         self.data.remove(&TypeId::of::<T>())
             .map(|any| *unsafe { any.downcast_unchecked::<T>() })
     }
 
     /// Returns true if the collection contains a value of type `T`.
-    pub fn contains<T: Any + 'static>(&self) -> bool {
+    pub fn contains<T: Any>(&self) -> bool {
         self.data.contains_key(&TypeId::of::<T>())
     }
 
     /// Gets the entry for the given type in the collection for in-place manipulation
-    pub fn entry<T: Any + 'static>(&mut self) -> Entry<T> {
+    pub fn entry<T: Any>(&mut self) -> Entry<T> {
         match self.data.entry(TypeId::of::<T>()) {
             hash_map::Entry::Occupied(e) => Entry::Occupied(OccupiedEntry {
                 entry: e,
@@ -285,19 +285,19 @@ impl AnyMap {
     /// Removes all items from the collection. Keeps the allocated memory for reuse.
     #[inline]
     pub fn clear(&mut self) {
-        self.data.clear();
+        self.data.clear()
     }
 }
 
 /// A view into a single occupied location in an AnyMap
 pub struct OccupiedEntry<'a, V: 'a> {
-    entry: hash_map::OccupiedEntry<'a, TypeId, Box<Any + 'static>>,
+    entry: hash_map::OccupiedEntry<'a, TypeId, Box<Any>>,
     type_: PhantomData<V>,
 }
 
 /// A view into a single empty location in an AnyMap
 pub struct VacantEntry<'a, V: 'a> {
-    entry: hash_map::VacantEntry<'a, TypeId, Box<Any + 'static>>,
+    entry: hash_map::VacantEntry<'a, TypeId, Box<Any>>,
     type_: PhantomData<V>,
 }
 
@@ -309,7 +309,7 @@ pub enum Entry<'a, V: 'a> {
     Vacant(VacantEntry<'a, V>),
 }
 
-impl<'a, V: 'static + Clone> Entry<'a, V> {
+impl<'a, V: Any + Clone> Entry<'a, V> {
     /// Returns a mutable reference to the entry if occupied, or the VacantEntry if vacant
     pub fn get(self) -> Result<&'a mut V, VacantEntry<'a, V>> {
         match self {
@@ -319,7 +319,7 @@ impl<'a, V: 'static + Clone> Entry<'a, V> {
     }
 }
 
-impl<'a, V: 'static> OccupiedEntry<'a, V> {
+impl<'a, V: Any> OccupiedEntry<'a, V> {
     /// Gets a reference to the value in the entry
     pub fn get(&self) -> &V {
         unsafe { self.entry.get().downcast_ref_unchecked() }
@@ -338,7 +338,7 @@ impl<'a, V: 'static> OccupiedEntry<'a, V> {
 
     /// Sets the value of the entry, and returns the entry's old value
     pub fn insert(&mut self, value: V) -> V {
-        unsafe { *self.entry.insert(Box::new(value) as Box<Any + 'static>).downcast_unchecked() }
+        unsafe { *self.entry.insert(Box::new(value)).downcast_unchecked() }
     }
 
     /// Takes the value out of the entry, and returns it
@@ -347,33 +347,33 @@ impl<'a, V: 'static> OccupiedEntry<'a, V> {
     }
 }
 
-impl<'a, V: 'static> VacantEntry<'a, V> {
+impl<'a, V: Any> VacantEntry<'a, V> {
     /// Sets the value of the entry with the VacantEntry's key,
     /// and returns a mutable reference to it
     pub fn insert(self, value: V) -> &'a mut V {
-        unsafe { self.entry.insert(Box::new(value) as Box<Any + 'static>).downcast_mut_unchecked() }
+        unsafe { self.entry.insert(Box::new(value)).downcast_mut_unchecked() }
     }
 }
 
 /// `AnyMap` iterator.
 #[derive(Clone)]
 pub struct Iter<'a> {
-    inner: hash_map::Iter<'a, TypeId, Box<Any + 'static>>,
+    inner: hash_map::Iter<'a, TypeId, Box<Any>>,
 }
 
 /// `AnyMap` mutable references iterator.
 pub struct IterMut<'a> {
-    inner: hash_map::IterMut<'a, TypeId, Box<Any + 'static>>,
+    inner: hash_map::IterMut<'a, TypeId, Box<Any>>,
 }
 
 /// `AnyMap` draining iterator.
 pub struct Drain<'a> {
-    inner: hash_map::Drain<'a, TypeId, Box<Any + 'static>>,
+    inner: hash_map::Drain<'a, TypeId, Box<Any>>,
 }
 
 /// `AnyMap` move iterator.
 pub struct IntoIter {
-    inner: hash_map::IntoIter<TypeId, Box<Any + 'static>>,
+    inner: hash_map::IntoIter<TypeId, Box<Any>>,
 }
 
 impl<'a> Iterator for Iter<'a> {
@@ -401,10 +401,10 @@ impl<'a> Iterator for IterMut<'a> {
 }
 
 impl<'a> Iterator for Drain<'a> {
-    type Item = Box<Any + 'static>;
+    type Item = Box<Any>;
 
     #[inline]
-    fn next(&mut self) -> Option<Box<Any + 'static>> {
+    fn next(&mut self) -> Option<Box<Any>> {
         self.inner.next().map(|item| item.1)
     }
 
@@ -413,10 +413,10 @@ impl<'a> Iterator for Drain<'a> {
 }
 
 impl Iterator for IntoIter {
-    type Item = Box<Any + 'static>;
+    type Item = Box<Any>;
 
     #[inline]
-    fn next(&mut self) -> Option<Box<Any + 'static>> {
+    fn next(&mut self) -> Option<Box<Any>> {
         self.inner.next().map(|item| item.1)
     }
 
