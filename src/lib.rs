@@ -10,99 +10,83 @@
 extern crate test;
 
 use std::any::{Any, TypeId};
-use std::mem::forget;
-use std::collections::HashMap;
-use std::collections::hash_map;
-use std::hash::Hasher;
-use std::collections::hash_state::HashState;
-use std::mem::transmute;
-use std::raw::TraitObject;
 use std::marker::PhantomData;
 
-struct TypeIdHasher {
-    value: u64,
-}
+use raw::RawAnyMap;
+use unchecked_any::UncheckedAnyExt;
 
-struct TypeIdState;
+macro_rules! impl_common_methods {
+    (
+        field: $t:ident.$field:ident;
+        new() => $new:expr;
+        with_capacity($with_capacity_arg:ident) => $with_capacity:expr;
+    ) => {
+        impl $t {
+            /// Create an empty collection.
+            #[inline]
+            pub fn new() -> $t {
+                $t {
+                    $field: $new,
+                }
+            }
 
-impl HashState for TypeIdState {
-    type Hasher = TypeIdHasher;
+            /// Creates an empty collection with the given initial capacity.
+            #[inline]
+            pub fn with_capacity($with_capacity_arg: usize) -> $t {
+                $t {
+                    $field: $with_capacity,
+                }
+            }
 
-    fn hasher(&self) -> TypeIdHasher {
-        TypeIdHasher { value: 0 }
-    }
-}
+            /// Returns the number of elements the collection can hold without reallocating.
+            #[inline]
+            pub fn capacity(&self) -> usize {
+                self.$field.capacity()
+            }
 
-impl Hasher for TypeIdHasher {
-    #[inline(always)]
-    fn write(&mut self, bytes: &[u8]) {
-        // This expects to receive one and exactly one 64-bit value
-        debug_assert!(bytes.len() == 8);
-        unsafe {
-            std::ptr::copy_nonoverlapping(&mut self.value, transmute(&bytes[0]), 1)
+            /// Reserves capacity for at least `additional` more elements to be inserted
+            /// in the collection. The collection may reserve more space to avoid
+            /// frequent reallocations.
+            ///
+            /// # Panics
+            ///
+            /// Panics if the new allocation size overflows `usize`.
+            #[inline]
+            pub fn reserve(&mut self, additional: usize) {
+                self.$field.reserve(additional)
+            }
+
+            /// Shrinks the capacity of the collection as much as possible. It will drop
+            /// down as much as possible while maintaining the internal rules
+            /// and possibly leaving some space in accordance with the resize policy.
+            #[inline]
+            pub fn shrink_to_fit(&mut self) {
+                self.$field.shrink_to_fit()
+            }
+
+            /// Returns the number of items in the collection.
+            #[inline]
+            pub fn len(&self) -> usize {
+                self.$field.len()
+            }
+
+            /// Returns true if there are no items in the collection.
+            #[inline]
+            pub fn is_empty(&self) -> bool {
+                self.$field.is_empty()
+            }
+
+            /// Removes all items from the collection. Keeps the allocated memory for reuse.
+            #[inline]
+            pub fn clear(&mut self) {
+                self.$field.clear()
+            }
         }
     }
-
-    #[inline(always)]
-    fn finish(&self) -> u64 { self.value }
 }
 
-/// An extension of `AnyRefExt` allowing unchecked downcasting of trait objects to `&T`.
-trait UncheckedAnyRefExt<'a> {
-    /// Returns a reference to the boxed value, assuming that it is of type `T`. This should only be
-    /// called if you are ABSOLUTELY CERTAIN of `T` as you will get really wacky output if it’s not.
-    unsafe fn downcast_ref_unchecked<T: 'static>(self) -> &'a T;
-}
-
-impl<'a> UncheckedAnyRefExt<'a> for &'a Any {
-    #[inline]
-    unsafe fn downcast_ref_unchecked<T: 'static>(self) -> &'a T {
-        // Get the raw representation of the trait object
-        let to: TraitObject = transmute(self);
-
-        // Extract the data pointer
-        transmute(to.data)
-    }
-}
-
-/// An extension of `AnyMutRefExt` allowing unchecked downcasting of trait objects to `&mut T`.
-trait UncheckedAnyMutRefExt<'a> {
-    /// Returns a reference to the boxed value, assuming that it is of type `T`. This should only be
-    /// called if you are ABSOLUTELY CERTAIN of `T` as you will get really wacky output if it’s not.
-    unsafe fn downcast_mut_unchecked<T: 'static>(self) -> &'a mut T;
-}
-
-impl<'a> UncheckedAnyMutRefExt<'a> for &'a mut Any {
-    #[inline]
-    unsafe fn downcast_mut_unchecked<T: 'static>(self) -> &'a mut T {
-        // Get the raw representation of the trait object
-        let to: TraitObject = transmute(self);
-
-        // Extract the data pointer
-        transmute(to.data)
-    }
-}
-
-/// An extension of `BoxAny` allowing unchecked downcasting of trait objects to `Box<T>`.
-trait UncheckedBoxAny {
-    /// Returns the boxed value, assuming that it is of type `T`. This should only be called if you
-    /// are ABSOLUTELY CERTAIN of `T` as you will get really wacky output if it’s not.
-    unsafe fn downcast_unchecked<T: 'static>(self) -> Box<T>;
-}
-
-impl UncheckedBoxAny for Box<Any> {
-    #[inline]
-    unsafe fn downcast_unchecked<T: 'static>(self) -> Box<T> {
-        // Get the raw representation of the trait object
-        let to: TraitObject = *transmute::<&Box<Any>, &TraitObject>(&self);
-
-        // Prevent destructor on self being run
-        forget(self);
-
-        // Extract the data pointer
-        transmute(to.data)
-    }
-}
+mod unchecked_any;
+pub mod raw;
 
 /// A collection containing zero or one values for any given type and allowing convenient,
 /// type-safe access to those values.
@@ -129,98 +113,28 @@ impl UncheckedBoxAny for Box<Any> {
 /// ```
 ///
 /// Values containing non-static references are not permitted.
+#[derive(Debug)]
 pub struct AnyMap {
-    data: HashMap<TypeId, Box<Any>, TypeIdState>,
+    raw: RawAnyMap,
+}
+
+impl_common_methods! {
+    field: AnyMap.raw;
+    new() => RawAnyMap::new();
+    with_capacity(capacity) => RawAnyMap::with_capacity(capacity);
 }
 
 impl AnyMap {
-    /// Construct a new `AnyMap`.
-    #[inline]
-    pub fn new() -> AnyMap {
-        AnyMap {
-            data: HashMap::with_hash_state(TypeIdState),
-        }
-    }
-
-    /// Creates an empty AnyMap with the given initial capacity.
-    #[inline]
-    pub fn with_capcity(capacity: usize) -> AnyMap {
-        AnyMap {
-            data: HashMap::with_capacity_and_hash_state(capacity, TypeIdState),
-        }
-    }
-
-    /// Returns the number of elements the collection can hold without reallocating.
-    #[inline]
-    pub fn capacity(&self) -> usize {
-        self.data.capacity()
-    }
-
-    /// Reserves capacity for at least `additional` more elements to be inserted
-    /// in the `AnyMap`. The collection may reserve more space to avoid
-    /// frequent reallocations.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the new allocation size overflows `usize`.
-    #[inline]
-    pub fn reserve(&mut self, additional: usize) {
-        self.data.reserve(additional)
-    }
-
-    /// Shrinks the capacity of the collection as much as possible. It will drop
-    /// down as much as possible while maintaining the internal rules
-    /// and possibly leaving some space in accordance with the resize policy.
-    #[inline]
-    pub fn shrink_to_fit(&mut self) {
-        self.data.shrink_to_fit()
-    }
-
-    /// An iterator visiting all items in the collection in arbitrary order.
-    /// Iterator element type is `&Any`.
-    ///
-    /// This is probably not a great deal of use.
-    #[inline]
-    pub fn iter(&self) -> Iter {
-        Iter {
-            inner: self.data.iter(),
-        }
-    }
-
-    /// An iterator visiting all items in the collection in arbitrary order.
-    /// Iterator element type is `&mut Any`.
-    ///
-    /// This is probably not a great deal of use.
-    #[inline]
-    pub fn iter_mut(&mut self) -> IterMut {
-        IterMut {
-            inner: self.data.iter_mut(),
-        }
-    }
-
-    /// An iterator visiting all items in the collection in arbitrary order.
-    /// Creates a consuming iterator, that is, one that moves each item
-    /// out of the map in arbitrary order. The map cannot be used after
-    /// calling this.
-    ///
-    /// Iterator element type is `Box<Any>`.
-    #[inline]
-    pub fn into_iter(self) -> IntoIter {
-        IntoIter {
-            inner: self.data.into_iter(),
-        }
-    }
-
     /// Returns a reference to the value stored in the collection for the type `T`, if it exists.
     pub fn get<T: Any>(&self) -> Option<&T> {
-        self.data.get(&TypeId::of::<T>())
+        self.raw.get(&TypeId::of::<T>())
             .map(|any| unsafe { any.downcast_ref_unchecked::<T>() })
     }
 
     /// Returns a mutable reference to the value stored in the collection for the type `T`,
     /// if it exists.
     pub fn get_mut<T: Any>(&mut self) -> Option<&mut T> {
-        self.data.get_mut(&TypeId::of::<T>())
+        self.raw.get_mut(&TypeId::of::<T>())
             .map(|any| unsafe { any.downcast_mut_unchecked::<T>() })
     }
 
@@ -228,80 +142,91 @@ impl AnyMap {
     /// If the collection already had a value of type `T`, that value is returned.
     /// Otherwise, `None` is returned.
     pub fn insert<T: Any>(&mut self, value: T) -> Option<T> {
-        self.data.insert(TypeId::of::<T>(), Box::new(value))
-            .map(|any| *unsafe { any.downcast_unchecked::<T>() })
+        unsafe {
+            self.raw.insert(TypeId::of::<T>(), Box::new(value))
+                .map(|any| *any.downcast_unchecked::<T>())
+        }
     }
 
     /// Removes the `T` value from the collection,
     /// returning it if there was one or `None` if there was not.
     pub fn remove<T: Any>(&mut self) -> Option<T> {
-        self.data.remove(&TypeId::of::<T>())
+        self.raw.remove(&TypeId::of::<T>())
             .map(|any| *unsafe { any.downcast_unchecked::<T>() })
     }
 
     /// Returns true if the collection contains a value of type `T`.
+    #[inline]
     pub fn contains<T: Any>(&self) -> bool {
-        self.data.contains_key(&TypeId::of::<T>())
+        self.raw.contains_key(&TypeId::of::<T>())
     }
 
     /// Gets the entry for the given type in the collection for in-place manipulation
     pub fn entry<T: Any>(&mut self) -> Entry<T> {
-        match self.data.entry(TypeId::of::<T>()) {
-            hash_map::Entry::Occupied(e) => Entry::Occupied(OccupiedEntry {
-                entry: e,
+        match self.raw.entry(TypeId::of::<T>()) {
+            raw::Entry::Occupied(e) => Entry::Occupied(OccupiedEntry {
+                inner: e,
                 type_: PhantomData,
             }),
-            hash_map::Entry::Vacant(e) => Entry::Vacant(VacantEntry {
-                entry: e,
+            raw::Entry::Vacant(e) => Entry::Vacant(VacantEntry {
+                inner: e,
                 type_: PhantomData,
             }),
         }
     }
 
-    /// Returns the number of items in the collection.
+    /// Get a reference to the raw untyped map underlying the `AnyMap`.
+    ///
+    /// Normal users will not need to use this, but generic libraries working with an `AnyMap` may
+    /// just find a use for it occasionally.
     #[inline]
-    pub fn len(&self) -> usize {
-        self.data.len()
+    pub fn as_raw(&self) -> &RawAnyMap {
+        &self.raw
     }
 
-    /// Returns true if there are no items in the collection.
+    /// Get a mutable reference to the raw untyped map underlying the `AnyMap`.
+    ///
+    /// Normal users will not need to use this, but generic libraries working with an `AnyMap` may
+    /// just find a use for it occasionally.
     #[inline]
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+    pub fn as_raw_mut(&mut self) -> &mut RawAnyMap {
+        &mut self.raw
     }
 
-    /// Clears the map, returning all items as an iterator.
+    /// Convert the `AnyMap` into the raw untyped map that underlyies it.
     ///
-    /// Iterator element type is `Box<Any>`.
-    ///
-    /// Keeps the allocated memory for reuse.
+    /// Normal users will not need to use this, but generic libraries working with an `AnyMap` may
+    /// just find a use for it occasionally.
     #[inline]
-    pub fn drain(&mut self) -> Drain {
-        Drain {
-            inner: self.data.drain(),
+    pub fn into_raw(self) -> RawAnyMap {
+        self.raw
+    }
+
+    /// Convert a raw untyped map into an `AnyMap`.
+    ///
+    /// Normal users will not need to use this, but generic libraries working with an `AnyMap` may
+    /// just find a use for it occasionally.
+    #[inline]
+    pub fn from_raw(raw: RawAnyMap) -> AnyMap {
+        AnyMap {
+            raw: raw,
         }
-    }
-
-    /// Removes all items from the collection. Keeps the allocated memory for reuse.
-    #[inline]
-    pub fn clear(&mut self) {
-        self.data.clear()
     }
 }
 
-/// A view into a single occupied location in an AnyMap
+/// A view into a single occupied location in an `AnyMap`.
 pub struct OccupiedEntry<'a, V: 'a> {
-    entry: hash_map::OccupiedEntry<'a, TypeId, Box<Any>>,
+    inner: raw::OccupiedEntry<'a>,
     type_: PhantomData<V>,
 }
 
-/// A view into a single empty location in an AnyMap
+/// A view into a single empty location in an `AnyMap`.
 pub struct VacantEntry<'a, V: 'a> {
-    entry: hash_map::VacantEntry<'a, TypeId, Box<Any>>,
+    inner: raw::VacantEntry<'a>,
     type_: PhantomData<V>,
 }
 
-/// A view into a single location in an AnyMap, which may be vacant or occupied
+/// A view into a single location in an `AnyMap`, which may be vacant or occupied.
 pub enum Entry<'a, V: 'a> {
     /// An occupied Entry
     Occupied(OccupiedEntry<'a, V>),
@@ -313,8 +238,8 @@ impl<'a, V: Any + Clone> Entry<'a, V> {
     /// Returns a mutable reference to the entry if occupied, or the VacantEntry if vacant
     pub fn get(self) -> Result<&'a mut V, VacantEntry<'a, V>> {
         match self {
-            Entry::Occupied(entry) => Ok(entry.into_mut()),
-            Entry::Vacant(entry) => Err(entry),
+            Entry::Occupied(inner) => Ok(inner.into_mut()),
+            Entry::Vacant(inner) => Err(inner),
         }
     }
 }
@@ -322,28 +247,28 @@ impl<'a, V: Any + Clone> Entry<'a, V> {
 impl<'a, V: Any> OccupiedEntry<'a, V> {
     /// Gets a reference to the value in the entry
     pub fn get(&self) -> &V {
-        unsafe { self.entry.get().downcast_ref_unchecked() }
+        unsafe { self.inner.get().downcast_ref_unchecked() }
     }
 
     /// Gets a mutable reference to the value in the entry
     pub fn get_mut(&mut self) -> &mut V {
-        unsafe { self.entry.get_mut().downcast_mut_unchecked() }
+        unsafe { self.inner.get_mut().downcast_mut_unchecked() }
     }
 
     /// Converts the OccupiedEntry into a mutable reference to the value in the entry
     /// with a lifetime bound to the collection itself
     pub fn into_mut(self) -> &'a mut V {
-        unsafe { self.entry.into_mut().downcast_mut_unchecked() }
+        unsafe { self.inner.into_mut().downcast_mut_unchecked() }
     }
 
     /// Sets the value of the entry, and returns the entry's old value
     pub fn insert(&mut self, value: V) -> V {
-        unsafe { *self.entry.insert(Box::new(value)).downcast_unchecked() }
+        unsafe { *self.inner.insert(Box::new(value)).downcast_unchecked() }
     }
 
     /// Takes the value out of the entry, and returns it
     pub fn remove(self) -> V {
-        unsafe { *self.entry.remove().downcast_unchecked() }
+        unsafe { *self.inner.remove().downcast_unchecked() }
     }
 }
 
@@ -351,77 +276,8 @@ impl<'a, V: Any> VacantEntry<'a, V> {
     /// Sets the value of the entry with the VacantEntry's key,
     /// and returns a mutable reference to it
     pub fn insert(self, value: V) -> &'a mut V {
-        unsafe { self.entry.insert(Box::new(value)).downcast_mut_unchecked() }
+        unsafe { self.inner.insert(Box::new(value)).downcast_mut_unchecked() }
     }
-}
-
-/// `AnyMap` iterator.
-#[derive(Clone)]
-pub struct Iter<'a> {
-    inner: hash_map::Iter<'a, TypeId, Box<Any>>,
-}
-
-/// `AnyMap` mutable references iterator.
-pub struct IterMut<'a> {
-    inner: hash_map::IterMut<'a, TypeId, Box<Any>>,
-}
-
-/// `AnyMap` draining iterator.
-pub struct Drain<'a> {
-    inner: hash_map::Drain<'a, TypeId, Box<Any>>,
-}
-
-/// `AnyMap` move iterator.
-pub struct IntoIter {
-    inner: hash_map::IntoIter<TypeId, Box<Any>>,
-}
-
-impl<'a> Iterator for Iter<'a> {
-    type Item = &'a Any;
-
-    #[inline]
-    fn next(&mut self) -> Option<&'a Any> {
-        self.inner.next().map(|item| &**item.1)
-    }
-
-    #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) { self.inner.size_hint() }
-}
-
-impl<'a> Iterator for IterMut<'a> {
-    type Item = &'a mut Any;
-
-    #[inline]
-    fn next(&mut self) -> Option<&'a mut Any> {
-        self.inner.next().map(|item| &mut **item.1)
-    }
-
-    #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) { self.inner.size_hint() }
-}
-
-impl<'a> Iterator for Drain<'a> {
-    type Item = Box<Any>;
-
-    #[inline]
-    fn next(&mut self) -> Option<Box<Any>> {
-        self.inner.next().map(|item| item.1)
-    }
-
-    #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) { self.inner.size_hint() }
-}
-
-impl Iterator for IntoIter {
-    type Item = Box<Any>;
-
-    #[inline]
-    fn next(&mut self) -> Option<Box<Any>> {
-        self.inner.next().map(|item| item.1)
-    }
-
-    #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) { self.inner.size_hint() }
 }
 
 #[bench]
