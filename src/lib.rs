@@ -1,10 +1,8 @@
 //! This crate provides the `AnyMap` type, a safe and convenient store for one value of each type.
 
-#![feature(core, std_misc, hash)]
+#![feature(core, std_misc)]
 #![cfg_attr(test, feature(test))]
-#![warn(unused_qualifications, non_upper_case_globals,
-        variant_size_differences, unused_typecasts,
-        missing_docs, unused_results)]
+#![warn(missing_docs, unused_results)]
 
 #[cfg(test)]
 extern crate test;
@@ -235,11 +233,21 @@ pub enum Entry<'a, V: 'a> {
 }
 
 impl<'a, V: Any + Clone> Entry<'a, V> {
-    /// Returns a mutable reference to the entry if occupied, or the VacantEntry if vacant
-    pub fn get(self) -> Result<&'a mut V, VacantEntry<'a, V>> {
+    /// Ensures a value is in the entry by inserting the default if empty, and returns
+    /// a mutable reference to the value in the entry.
+    pub fn or_insert(self, default: V) -> &'a mut V {
         match self {
-            Entry::Occupied(inner) => Ok(inner.into_mut()),
-            Entry::Vacant(inner) => Err(inner),
+            Entry::Occupied(inner) => inner.into_mut(),
+            Entry::Vacant(inner) => inner.insert(default),
+        }
+    }
+
+    /// Ensures a value is in the entry by inserting the result of the default function if empty,
+    /// and returns a mutable reference to the value in the entry.
+    pub fn or_insert_with<F: FnOnce() -> V>(self, default: F) -> &'a mut V {
+        match self {
+            Entry::Occupied(inner) => inner.into_mut(),
+            Entry::Vacant(inner) => inner.insert(default()),
         }
     }
 }

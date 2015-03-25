@@ -224,17 +224,17 @@ impl RawAnyMap {
 
 }
 
-impl<Q: ?Sized> Index<Q> for RawAnyMap where TypeId: Borrow<Q>, Q: Eq + Hash {
+impl<Q> Index<Q> for RawAnyMap where TypeId: Borrow<Q>, Q: Eq + Hash {
     type Output = Any;
 
-    fn index<'a>(&'a self, index: &Q) -> &'a Any {
-        self.get(index).expect("no entry found for key")
+    fn index<'a>(&'a self, index: Q) -> &'a Any {
+        self.get(&index).expect("no entry found for key")
     }
 }
 
-impl<Q: ?Sized> IndexMut<Q> for RawAnyMap where TypeId: Borrow<Q>, Q: Eq + Hash {
-    fn index_mut<'a>(&'a mut self, index: &Q) -> &'a mut Any {
-        self.get_mut(index).expect("no entry found for key")
+impl<Q> IndexMut<Q> for RawAnyMap where TypeId: Borrow<Q>, Q: Eq + Hash {
+    fn index_mut<'a>(&'a mut self, index: Q) -> &'a mut Any {
+        self.get_mut(&index).expect("no entry found for key")
     }
 }
 
@@ -266,11 +266,27 @@ pub enum Entry<'a> {
 }
 
 impl<'a> Entry<'a> {
-    /// Returns a mutable reference to the entry if occupied, or the VacantEntry if vacant.
-    pub fn get(self) -> Result<&'a mut Any, VacantEntry<'a>> {
+    /// Ensures a value is in the entry by inserting the default if empty, and returns
+    /// a mutable reference to the value in the entry.
+    ///
+    /// It is the caller’s responsibility to ensure that the key of the entry corresponds with
+    /// the type ID of `value`. If they do not, memory safety may be violated.
+    pub unsafe fn or_insert(self, default: Box<Any>) -> &'a mut Any {
         match self {
-            Entry::Occupied(inner) => Ok(inner.into_mut()),
-            Entry::Vacant(inner) => Err(inner),
+            Entry::Occupied(inner) => inner.into_mut(),
+            Entry::Vacant(inner) => inner.insert(default),
+        }
+    }
+
+    /// Ensures a value is in the entry by inserting the result of the default function if empty,
+    /// and returns a mutable reference to the value in the entry.
+    ///
+    /// It is the caller’s responsibility to ensure that the key of the entry corresponds with
+    /// the type ID of `value`. If they do not, memory safety may be violated.
+    pub unsafe fn or_insert_with<F: FnOnce() -> Box<Any>>(self, default: F) -> &'a mut Any {
+        match self {
+            Entry::Occupied(inner) => inner.into_mut(),
+            Entry::Vacant(inner) => inner.insert(default()),
         }
     }
 }
