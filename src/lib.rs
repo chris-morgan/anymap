@@ -1,6 +1,6 @@
 //! This crate provides the `AnyMap` type, a safe and convenient store for one value of each type.
 
-#![feature(core, std_misc)]
+#![feature(core, std_misc, convert)]
 #![cfg_attr(test, feature(test))]
 #![warn(missing_docs, unused_results)]
 
@@ -172,43 +172,23 @@ impl AnyMap {
             }),
         }
     }
+}
 
-    /// Get a reference to the raw untyped map underlying the `AnyMap`.
-    ///
-    /// Normal users will not need to use this, but generic libraries working with an `AnyMap` may
-    /// just find a use for it occasionally.
-    #[inline]
-    pub fn as_raw(&self) -> &RawAnyMap {
+impl AsRef<RawAnyMap> for AnyMap {
+    fn as_ref(&self) -> &RawAnyMap {
         &self.raw
     }
+}
 
-    /// Get a mutable reference to the raw untyped map underlying the `AnyMap`.
-    ///
-    /// Normal users will not need to use this, but generic libraries working with an `AnyMap` may
-    /// just find a use for it occasionally.
-    #[inline]
-    pub fn as_raw_mut(&mut self) -> &mut RawAnyMap {
+impl AsMut<RawAnyMap> for AnyMap {
+    fn as_mut(&mut self) -> &mut RawAnyMap {
         &mut self.raw
     }
+}
 
-    /// Convert the `AnyMap` into the raw untyped map that underlyies it.
-    ///
-    /// Normal users will not need to use this, but generic libraries working with an `AnyMap` may
-    /// just find a use for it occasionally.
-    #[inline]
-    pub fn into_raw(self) -> RawAnyMap {
+impl Into<RawAnyMap> for AnyMap {
+    fn into(self) -> RawAnyMap {
         self.raw
-    }
-
-    /// Convert a raw untyped map into an `AnyMap`.
-    ///
-    /// Normal users will not need to use this, but generic libraries working with an `AnyMap` may
-    /// just find a use for it occasionally.
-    #[inline]
-    pub fn from_raw(raw: RawAnyMap) -> AnyMap {
-        AnyMap {
-            raw: raw,
-        }
     }
 }
 
