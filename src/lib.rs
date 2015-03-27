@@ -7,10 +7,10 @@
 #[cfg(test)]
 extern crate test;
 
-use std::any::{Any, TypeId};
+use std::any::TypeId;
 use std::marker::PhantomData;
 
-use raw::RawAnyMap;
+use raw::{RawAnyMap, Any};
 use unchecked_any::UncheckedAnyExt;
 
 macro_rules! impl_common_methods {
@@ -85,6 +85,8 @@ macro_rules! impl_common_methods {
 
 mod unchecked_any;
 pub mod raw;
+#[cfg(feature = "clone")]
+mod with_clone;
 
 /// A collection containing zero or one values for any given type and allowing convenient,
 /// type-safe access to those values.
@@ -98,7 +100,7 @@ pub mod raw;
 /// data.remove::<i32>();
 /// assert_eq!(data.get::<i32>(), None);
 ///
-/// #[derive(PartialEq, Debug)]
+/// #[derive(Clone, PartialEq, Debug)]
 /// struct Foo {
 ///     str: String,
 /// }
@@ -112,6 +114,7 @@ pub mod raw;
 ///
 /// Values containing non-static references are not permitted.
 #[derive(Debug)]
+#[cfg_attr(feature = "clone", derive(Clone))]
 pub struct AnyMap {
     raw: RawAnyMap,
 }
@@ -300,67 +303,103 @@ fn bench_get_present(b: &mut ::test::Bencher) {
     })
 }
 
-#[test]
-fn test_entry() {
-    #[derive(Debug, PartialEq)] struct A(i32);
-    #[derive(Debug, PartialEq)] struct B(i32);
-    #[derive(Debug, PartialEq)] struct C(i32);
-    #[derive(Debug, PartialEq)] struct D(i32);
-    #[derive(Debug, PartialEq)] struct E(i32);
-    #[derive(Debug, PartialEq)] struct F(i32);
-    #[derive(Debug, PartialEq)] struct J(i32);
+#[cfg(test)]
+mod tests {
+    use {AnyMap, Entry};
 
-    let mut map: AnyMap = AnyMap::new();
-    assert_eq!(map.insert(A(10)), None);
-    assert_eq!(map.insert(B(20)), None);
-    assert_eq!(map.insert(C(30)), None);
-    assert_eq!(map.insert(D(40)), None);
-    assert_eq!(map.insert(E(50)), None);
-    assert_eq!(map.insert(F(60)), None);
+    #[derive(Clone, Debug, PartialEq)] struct A(i32);
+    #[derive(Clone, Debug, PartialEq)] struct B(i32);
+    #[derive(Clone, Debug, PartialEq)] struct C(i32);
+    #[derive(Clone, Debug, PartialEq)] struct D(i32);
+    #[derive(Clone, Debug, PartialEq)] struct E(i32);
+    #[derive(Clone, Debug, PartialEq)] struct F(i32);
+    #[derive(Clone, Debug, PartialEq)] struct J(i32);
 
-    // Existing key (insert)
-    match map.entry::<A>() {
-        Entry::Vacant(_) => unreachable!(),
-        Entry::Occupied(mut view) => {
-            assert_eq!(view.get(), &A(10));
-            assert_eq!(view.insert(A(100)), A(10));
+    #[test]
+    fn test_entry() {
+        let mut map: AnyMap = AnyMap::new();
+        assert_eq!(map.insert(A(10)), None);
+        assert_eq!(map.insert(B(20)), None);
+        assert_eq!(map.insert(C(30)), None);
+        assert_eq!(map.insert(D(40)), None);
+        assert_eq!(map.insert(E(50)), None);
+        assert_eq!(map.insert(F(60)), None);
+
+        // Existing key (insert)
+        match map.entry::<A>() {
+            Entry::Vacant(_) => unreachable!(),
+            Entry::Occupied(mut view) => {
+                assert_eq!(view.get(), &A(10));
+                assert_eq!(view.insert(A(100)), A(10));
+            }
         }
-    }
-    assert_eq!(map.get::<A>().unwrap(), &A(100));
-    assert_eq!(map.len(), 6);
+        assert_eq!(map.get::<A>().unwrap(), &A(100));
+        assert_eq!(map.len(), 6);
 
 
-    // Existing key (update)
-    match map.entry::<B>() {
-        Entry::Vacant(_) => unreachable!(),
-        Entry::Occupied(mut view) => {
-            let v = view.get_mut();
-            let new_v = B(v.0 * 10);
-            *v = new_v;
+        // Existing key (update)
+        match map.entry::<B>() {
+            Entry::Vacant(_) => unreachable!(),
+            Entry::Occupied(mut view) => {
+                let v = view.get_mut();
+                let new_v = B(v.0 * 10);
+                *v = new_v;
+            }
         }
-    }
-    assert_eq!(map.get().unwrap(), &B(200));
-    assert_eq!(map.len(), 6);
+        assert_eq!(map.get().unwrap(), &B(200));
+        assert_eq!(map.len(), 6);
 
 
-    // Existing key (remove)
-    match map.entry::<C>() {
-        Entry::Vacant(_) => unreachable!(),
-        Entry::Occupied(view) => {
-            assert_eq!(view.remove(), C(30));
+        // Existing key (remove)
+        match map.entry::<C>() {
+            Entry::Vacant(_) => unreachable!(),
+            Entry::Occupied(view) => {
+                assert_eq!(view.remove(), C(30));
+            }
         }
-    }
-    assert_eq!(map.get::<C>(), None);
-    assert_eq!(map.len(), 5);
+        assert_eq!(map.get::<C>(), None);
+        assert_eq!(map.len(), 5);
 
 
-    // Inexistent key (insert)
-    match map.entry::<J>() {
-        Entry::Occupied(_) => unreachable!(),
-        Entry::Vacant(view) => {
-            assert_eq!(*view.insert(J(1000)), J(1000));
+        // Inexistent key (insert)
+        match map.entry::<J>() {
+            Entry::Occupied(_) => unreachable!(),
+            Entry::Vacant(view) => {
+                assert_eq!(*view.insert(J(1000)), J(1000));
+            }
         }
+        assert_eq!(map.get::<J>().unwrap(), &J(1000));
+        assert_eq!(map.len(), 6);
+
+        // Entry.or_insert on existing key
+        map.entry::<B>().or_insert(B(71)).0 += 1;
+        assert_eq!(map.get::<B>().unwrap(), &B(201));
+        assert_eq!(map.len(), 6);
+
+        // Entry.or_insert on nonexisting key
+        map.entry::<C>().or_insert(C(300)).0 += 1;
+        assert_eq!(map.get::<C>().unwrap(), &C(301));
+        assert_eq!(map.len(), 7);
     }
-    assert_eq!(map.get::<J>().unwrap(), &J(1000));
-    assert_eq!(map.len(), 6);
+
+    #[cfg(feature = "clone")]
+    #[test]
+    fn test_clone() {
+        let mut map = AnyMap::new();
+        let _ = map.insert(A(1));
+        let _ = map.insert(B(2));
+        let _ = map.insert(D(3));
+        let _ = map.insert(E(4));
+        let _ = map.insert(F(5));
+        let _ = map.insert(J(6));
+        let map2 = map.clone();
+        assert_eq!(map2.len(), 6);
+        assert_eq!(map2.get::<A>(), Some(&A(1)));
+        assert_eq!(map2.get::<B>(), Some(&B(2)));
+        assert_eq!(map2.get::<C>(), None);
+        assert_eq!(map2.get::<D>(), Some(&D(3)));
+        assert_eq!(map2.get::<E>(), Some(&E(4)));
+        assert_eq!(map2.get::<F>(), Some(&F(5)));
+        assert_eq!(map2.get::<J>(), Some(&J(6)));
+    }
 }

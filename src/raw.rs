@@ -2,7 +2,7 @@
 //!
 //! All relevant details are in the `RawAnyMap` struct.
 
-use std::any::{Any, TypeId};
+use std::any::TypeId;
 use std::borrow::Borrow;
 use std::collections::hash_map::{self, HashMap};
 use std::collections::hash_state::HashState;
@@ -13,10 +13,16 @@ use std::mem;
 use std::ops::{Index, IndexMut};
 use std::ptr;
 
+#[cfg(not(feature = "clone"))]
+pub use std::any::Any;
+#[cfg(feature = "clone")]
+pub use with_clone::Any;
+
 struct TypeIdHasher {
     value: u64,
 }
 
+#[cfg_attr(feature = "clone", derive(Clone))]
 struct TypeIdState;
 
 impl HashState for TypeIdState {
@@ -50,6 +56,7 @@ impl Hasher for TypeIdHasher {
 /// contents of an `AnyMap`. However, because you will then be dealing with `Any` trait objects, it
 /// doesn’t tend to be so very useful. Still, if you need it, it’s here.
 #[derive(Debug)]
+#[cfg_attr(feature = "clone", derive(Clone))]
 pub struct RawAnyMap {
     inner: HashMap<TypeId, Box<Any>, TypeIdState>,
 }

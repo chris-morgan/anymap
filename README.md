@@ -9,23 +9,16 @@ As another example of such an interface, JavaScript objects are exactly the same
 
 Fortunately, we can do better than these things in Rust. Our type system is quite equal to easy, robust expression of such problems.
 
-The ``AnyMap`` type is a friendly wrapper around a ``HashMap<TypeId, Box<Any + 'static>>``, exposing a nice, easy typed interface, perfectly safe and absolutely robust.
+The ``AnyMap`` type is a friendly wrapper around a ``HashMap<TypeId, Box<Any>>``, exposing a nice, easy typed interface, perfectly safe and absolutely robust.
 
 What this means is that in an ``AnyMap`` you may store zero or one values for every type.
 
 Instructions
 ------------
 
-Cargo all the way.
+Cargo all the way: it is `anymap` on crates.io.
 
-The documentation, with examples, [is also available online](http://www.rust-ci.org/chris-morgan/anymap/doc/anymap/struct.AnyMap.html).
-
-Future work
------------
-
-I think that the only thing left for this is filling out additional methods from ``HashMap`` as appropriate.
-
-It’s a very simple thing. (The initial implementation time was under ten minutes.)
+There is an optional `clone` feature on the `anymap` crate; if enabled, your `AnyMap` will require contained types to implement `Clone` and will itself satisfy `Clone`.
 
 Author
 ------

@@ -3,6 +3,8 @@ env:
   global:
     - secure: nR+DJRUQ9v03nNZMpMu1tGKLKBAqdQsTIAr8ffdl+DUEh3b2jvQ+vLLNFLPjsloqhoOXo7cWO7qVpiE4ZOq2lNDURQjdiZGFjh/Y5+xKy2BqFdV7qQ1JoBzsMyx28tQTYz0mtBsACiCYKKb+ddNX5hpwrsjp8cS7htZktA5kbiU=
 script:
+  - cargo build --verbose --features clone
+  - cargo test --verbose --features clone
   - cargo build --verbose
   - cargo test --verbose
   - cargo doc --verbose
