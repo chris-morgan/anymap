@@ -1,6 +1,6 @@
 //! This crate provides the `AnyMap` type, a safe and convenient store for one value of each type.
 
-#![feature(core, std_misc, convert)]
+#![feature(core, std_misc)]
 #![cfg_attr(test, feature(test))]
 #![warn(missing_docs, unused_results)]
 
@@ -346,7 +346,7 @@ mod tests {
                 *v = new_v;
             }
         }
-        assert_eq!(map.get().unwrap(), &B(200));
+        assert_eq!(map.get::<B>().unwrap(), &B(200));
         assert_eq!(map.len(), 6);
 
 
