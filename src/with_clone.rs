@@ -6,7 +6,7 @@ pub trait CloneToAny {
     fn clone_to_any(&self) -> Box<Any>;
 }
 
-impl<T: 'static + Clone> CloneToAny for T {
+impl<T: Any + Clone> CloneToAny for T {
     fn clone_to_any(&self) -> Box<Any> {
         Box::new(self.clone())
     }
@@ -16,7 +16,7 @@ impl<T: 'static + Clone> CloneToAny for T {
 /// Pretty much just `std::any::Any + Clone`.
 pub trait Any: ::std::any::Any + CloneToAny { }
 
-impl<T: 'static + Clone> Any for T { }
+impl<T: ::std::any::Any + Clone> Any for T { }
 
 impl Clone for Box<Any> {
     fn clone(&self) -> Box<Any> {
