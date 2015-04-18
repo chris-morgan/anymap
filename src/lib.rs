@@ -85,8 +85,6 @@ macro_rules! impl_common_methods {
 
 mod unchecked_any;
 pub mod raw;
-#[cfg(feature = "clone")]
-mod with_clone;
 
 /// A collection containing zero or one values for any given type and allowing convenient,
 /// type-safe access to those values.
@@ -401,5 +399,12 @@ mod tests {
         assert_eq!(map2.get::<E>(), Some(&E(4)));
         assert_eq!(map2.get::<F>(), Some(&F(5)));
         assert_eq!(map2.get::<J>(), Some(&J(6)));
+    }
+
+    #[cfg(feature = "concurrent")]
+    #[test]
+    fn test_concurrent() {
+        fn assert_concurrent<T: Send + Sync>() { }
+        assert_concurrent::<AnyMap>();
     }
 }

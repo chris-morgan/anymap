@@ -18,10 +18,9 @@ use std::ops::{Index, IndexMut};
 #[cfg(feature = "nightly")]
 use std::ptr;
 
-#[cfg(not(feature = "clone"))]
-pub use std::any::Any;
-#[cfg(feature = "clone")]
-pub use with_clone::Any;
+pub use self::any::Any;
+
+mod any;
 
 #[cfg(feature = "nightly")]
 struct TypeIdHasher {
