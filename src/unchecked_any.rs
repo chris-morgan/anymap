@@ -1,6 +1,16 @@
 use raw::Any;
 use std::mem;
+#[cfg(feature = "nightly")]
 use std::raw::TraitObject;
+
+#[cfg(not(feature = "nightly"))]
+#[repr(C)]
+#[allow(raw_pointer_derive)]
+#[derive(Copy, Clone)]
+struct TraitObject {
+    pub data: *mut (),
+    pub vtable: *mut (),
+}
 
 #[allow(missing_docs)]  // Bogus warning (it’s not public outside the crate), ☹
 pub trait UncheckedAnyExt {

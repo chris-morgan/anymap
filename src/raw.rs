@@ -5,12 +5,17 @@
 use std::any::TypeId;
 use std::borrow::Borrow;
 use std::collections::hash_map::{self, HashMap};
+#[cfg(feature = "nightly")]
 use std::collections::hash_state::HashState;
 use std::default::Default;
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
+#[cfg(feature = "nightly")]
+use std::hash::Hasher;
 use std::iter::IntoIterator;
+#[cfg(feature = "nightly")]
 use std::mem;
 use std::ops::{Index, IndexMut};
+#[cfg(feature = "nightly")]
 use std::ptr;
 
 #[cfg(not(feature = "clone"))]
@@ -18,13 +23,16 @@ pub use std::any::Any;
 #[cfg(feature = "clone")]
 pub use with_clone::Any;
 
+#[cfg(feature = "nightly")]
 struct TypeIdHasher {
     value: u64,
 }
 
 #[cfg_attr(feature = "clone", derive(Clone))]
+#[cfg(feature = "nightly")]
 struct TypeIdState;
 
+#[cfg(feature = "nightly")]
 impl HashState for TypeIdState {
     type Hasher = TypeIdHasher;
 
@@ -33,6 +41,7 @@ impl HashState for TypeIdState {
     }
 }
 
+#[cfg(feature = "nightly")]
 impl Hasher for TypeIdHasher {
     #[inline(always)]
     fn write(&mut self, bytes: &[u8]) {
@@ -58,7 +67,11 @@ impl Hasher for TypeIdHasher {
 #[derive(Debug)]
 #[cfg_attr(feature = "clone", derive(Clone))]
 pub struct RawAnyMap {
+    #[cfg(feature = "nightly")]
     inner: HashMap<TypeId, Box<Any>, TypeIdState>,
+
+    #[cfg(not(feature = "nightly"))]
+    inner: HashMap<TypeId, Box<Any>>,
 }
 
 impl Default for RawAnyMap {
@@ -67,10 +80,18 @@ impl Default for RawAnyMap {
     }
 }
 
+#[cfg(feature = "nightly")]
 impl_common_methods! {
     field: RawAnyMap.inner;
     new() => HashMap::with_hash_state(TypeIdState);
     with_capacity(capacity) => HashMap::with_capacity_and_hash_state(capacity, TypeIdState);
+}
+
+#[cfg(not(feature = "nightly"))]
+impl_common_methods! {
+    field: RawAnyMap.inner;
+    new() => HashMap::new();
+    with_capacity(capacity) => HashMap::with_capacity(capacity);
 }
 
 /// RawAnyMap iterator.
@@ -114,14 +135,17 @@ impl ExactSizeIterator for IntoIter {
 }
 
 /// RawAnyMap drain iterator.
+#[cfg(feature = "nightly")]
 pub struct Drain<'a> {
     inner: hash_map::Drain<'a, TypeId, Box<Any>>,
 }
+#[cfg(feature = "nightly")]
 impl<'a> Iterator for Drain<'a> {
     type Item = Box<Any>;
     #[inline] fn next(&mut self) -> Option<Box<Any>> { self.inner.next().map(|x| x.1) }
     #[inline] fn size_hint(&self) -> (usize, Option<usize>) { self.inner.size_hint() }
 }
+#[cfg(feature = "nightly")]
 impl<'a> ExactSizeIterator for Drain<'a> {
     #[inline] fn len(&self) -> usize { self.inner.len() }
 }
@@ -165,6 +189,7 @@ impl RawAnyMap {
     ///
     /// Keeps the allocated memory for reuse.
     #[inline]
+    #[cfg(feature = "nightly")]
     pub fn drain(&mut self) -> Drain {
         Drain {
             inner: self.inner.drain(),

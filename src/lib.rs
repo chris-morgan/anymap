@@ -1,6 +1,6 @@
 //! This crate provides the `AnyMap` type, a safe and convenient store for one value of each type.
 
-#![feature(core, std_misc)]
+#![cfg_attr(feature = "nightly", feature(core, std_misc))]
 #![cfg_attr(test, feature(test))]
 #![warn(missing_docs, unused_results)]
 
