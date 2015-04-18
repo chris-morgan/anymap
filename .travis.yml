@@ -3,9 +3,13 @@ env:
   global:
     - secure: nR+DJRUQ9v03nNZMpMu1tGKLKBAqdQsTIAr8ffdl+DUEh3b2jvQ+vLLNFLPjsloqhoOXo7cWO7qVpiE4ZOq2lNDURQjdiZGFjh/Y5+xKy2BqFdV7qQ1JoBzsMyx28tQTYz0mtBsACiCYKKb+ddNX5hpwrsjp8cS7htZktA5kbiU=
 script:
-  - [[ "$(rustc --version)" =~ -dev ]] && cargo test --features nightly || ! cargo test --features nightly
-  - [[ "$(rustc --version)" =~ -dev ]] && cargo test --features 'clone nightly' || ! cargo test --features 'clone nightly'
+  - if [[ "$(rustc --version)" =~ -dev ]]; then cargo test --features nightly; else ! cargo test --features nightly; fi
+  - if [[ "$(rustc --version)" =~ -dev ]]; then cargo test --features 'clone nightly'; else ! cargo test --features 'clone nightly'; fi
+  - if [[ "$(rustc --version)" =~ -dev ]]; then cargo test --features 'concurrent nightly'; else ! cargo test --features 'concurrent nightly'; fi
+  - if [[ "$(rustc --version)" =~ -dev ]]; then cargo test --features 'clone concurrent nightly'; else ! cargo test --features 'clone concurrent nightly'; fi
   - cargo test --features clone
+  - cargo test --features concurrent
+  - cargo test --features 'clone concurrent'
   - cargo test
   - cargo doc
 after_script:

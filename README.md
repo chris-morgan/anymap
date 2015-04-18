@@ -18,7 +18,13 @@ Instructions
 
 Cargo all the way: it is `anymap` on crates.io.
 
-There is an optional `clone` feature on the `anymap` crate; if enabled, your `AnyMap` will require contained types to implement `Clone` and will itself satisfy `Clone`.
+There are a couple of optional features on the `anymap` crate:
+
+- `clone`: if enabled, your `AnyMap` will require contained types to implement `Clone` and will itself satisfy `Clone`.
+
+- `concurrent`: if enabled, your `AnyMap` will require contained types to satisfy `Send` and `Sync` and will itself satisfy `Send` and `Sync`.
+
+These can be combined if desired.
 
 For users of the nightly instead of the beta of rustc there are a couple of things behind the `nightly` feature like a `drain` method on the `RawAnyMap` and a more efficient hashing technique which makes lookup in the map a tad faster.
 
