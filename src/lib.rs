@@ -427,10 +427,15 @@ mod tests {
         fn assert_send<T: Send>() { }
         fn assert_sync<T: Sync>() { }
         fn assert_clone<T: Clone>() { }
+        fn assert_debug<T: ::std::fmt::Debug>() { }
         assert_send::<Map<Any + Send>>();
         assert_send::<Map<Any + Send + Sync>>();
         assert_sync::<Map<Any + Sync>>();
         assert_sync::<Map<Any + Send + Sync>>();
+        assert_debug::<Map<Any>>();
+        assert_debug::<Map<Any + Send>>();
+        assert_debug::<Map<Any + Sync>>();
+        assert_debug::<Map<Any + Send + Sync>>();
         assert_send::<Map<CloneAny + Send>>();
         assert_send::<Map<CloneAny + Send + Sync>>();
         assert_sync::<Map<CloneAny + Sync>>();
@@ -439,5 +444,9 @@ mod tests {
         assert_clone::<Map<CloneAny + Send + Sync>>();
         assert_clone::<Map<CloneAny + Sync>>();
         assert_clone::<Map<CloneAny + Send + Sync>>();
+        assert_debug::<Map<CloneAny>>();
+        assert_debug::<Map<CloneAny + Send>>();
+        assert_debug::<Map<CloneAny + Sync>>();
+        assert_debug::<Map<CloneAny + Send + Sync>>();
     }
 }
