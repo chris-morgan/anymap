@@ -10,8 +10,8 @@ extern crate test;
 use std::any::TypeId;
 use std::marker::PhantomData;
 
-use raw::{RawAnyMap, Any};
-use unchecked_any::UncheckedAnyExt;
+use raw::RawMap;
+use any::{UncheckedAnyExt, IntoBox, Any};
 
 macro_rules! impl_common_methods {
     (
@@ -19,10 +19,10 @@ macro_rules! impl_common_methods {
         new() => $new:expr;
         with_capacity($with_capacity_arg:ident) => $with_capacity:expr;
     ) => {
-        impl $t {
+        impl<A: ?Sized + UncheckedAnyExt> $t<A> {
             /// Create an empty collection.
             #[inline]
-            pub fn new() -> $t {
+            pub fn new() -> $t<A> {
                 $t {
                     $field: $new,
                 }
@@ -30,7 +30,7 @@ macro_rules! impl_common_methods {
 
             /// Creates an empty collection with the given initial capacity.
             #[inline]
-            pub fn with_capacity($with_capacity_arg: usize) -> $t {
+            pub fn with_capacity($with_capacity_arg: usize) -> $t<A> {
                 $t {
                     $field: $with_capacity,
                 }
@@ -83,11 +83,17 @@ macro_rules! impl_common_methods {
     }
 }
 
-mod unchecked_any;
+pub mod any;
 pub mod raw;
 
 /// A collection containing zero or one values for any given type and allowing convenient,
 /// type-safe access to those values.
+///
+/// The type parameter `A` allows you to use a different value type; normally you will want it to
+/// be `anymap::any::Any`, but there are other choices:
+///
+/// - If you want the entire map to be cloneable, use `CloneAny` instead of `Any`.
+/// - You can add on `+ Send` and/or `+ Sync` (e.g. `Map<Any + Send>`) to add those bounds.
 ///
 /// ```rust
 /// # use anymap::AnyMap;
@@ -112,27 +118,42 @@ pub mod raw;
 ///
 /// Values containing non-static references are not permitted.
 #[derive(Debug)]
-#[cfg_attr(feature = "clone", derive(Clone))]
-pub struct AnyMap {
-    raw: RawAnyMap,
+pub struct Map<A: ?Sized + UncheckedAnyExt = Any> {
+    raw: RawMap<A>,
 }
+
+// #[derive(Clone)] would want A to implement Clone, but in reality it’s only Box<A> that can.
+impl<A: ?Sized + UncheckedAnyExt> Clone for Map<A> where Box<A>: Clone {
+    fn clone(&self) -> Map<A> {
+        Map {
+            raw: self.raw.clone(),
+        }
+    }
+}
+
+/// The most common type of `Map`: just using `Any`.
+///
+/// Why is this a separate type alias rather than a default value for `Map<A>`? `Map::new()`
+/// doesn’t seem to be happy to infer that it should go with the default value.
+/// It’s a bit sad, really. Ah well, I guess this approach will do.
+pub type AnyMap = Map<Any>;
 
 impl_common_methods! {
-    field: AnyMap.raw;
-    new() => RawAnyMap::new();
-    with_capacity(capacity) => RawAnyMap::with_capacity(capacity);
+    field: Map.raw;
+    new() => RawMap::new();
+    with_capacity(capacity) => RawMap::with_capacity(capacity);
 }
 
-impl AnyMap {
+impl<A: ?Sized + UncheckedAnyExt> Map<A> {
     /// Returns a reference to the value stored in the collection for the type `T`, if it exists.
-    pub fn get<T: Any>(&self) -> Option<&T> {
+    pub fn get<T: IntoBox<A>>(&self) -> Option<&T> {
         self.raw.get(&TypeId::of::<T>())
             .map(|any| unsafe { any.downcast_ref_unchecked::<T>() })
     }
 
     /// Returns a mutable reference to the value stored in the collection for the type `T`,
     /// if it exists.
-    pub fn get_mut<T: Any>(&mut self) -> Option<&mut T> {
+    pub fn get_mut<T: IntoBox<A>>(&mut self) -> Option<&mut T> {
         self.raw.get_mut(&TypeId::of::<T>())
             .map(|any| unsafe { any.downcast_mut_unchecked::<T>() })
     }
@@ -140,28 +161,28 @@ impl AnyMap {
     /// Sets the value stored in the collection for the type `T`.
     /// If the collection already had a value of type `T`, that value is returned.
     /// Otherwise, `None` is returned.
-    pub fn insert<T: Any>(&mut self, value: T) -> Option<T> {
+    pub fn insert<T: IntoBox<A>>(&mut self, value: T) -> Option<T> {
         unsafe {
-            self.raw.insert(TypeId::of::<T>(), Box::new(value))
+            self.raw.insert(TypeId::of::<T>(), value.into_box())
                 .map(|any| *any.downcast_unchecked::<T>())
         }
     }
 
     /// Removes the `T` value from the collection,
     /// returning it if there was one or `None` if there was not.
-    pub fn remove<T: Any>(&mut self) -> Option<T> {
+    pub fn remove<T: IntoBox<A>>(&mut self) -> Option<T> {
         self.raw.remove(&TypeId::of::<T>())
             .map(|any| *unsafe { any.downcast_unchecked::<T>() })
     }
 
     /// Returns true if the collection contains a value of type `T`.
     #[inline]
-    pub fn contains<T: Any>(&self) -> bool {
+    pub fn contains<T: IntoBox<A>>(&self) -> bool {
         self.raw.contains_key(&TypeId::of::<T>())
     }
 
     /// Gets the entry for the given type in the collection for in-place manipulation
-    pub fn entry<T: Any>(&mut self) -> Entry<T> {
+    pub fn entry<T: IntoBox<A>>(&mut self) -> Entry<A, T> {
         match self.raw.entry(TypeId::of::<T>()) {
             raw::Entry::Occupied(e) => Entry::Occupied(OccupiedEntry {
                 inner: e,
@@ -175,45 +196,45 @@ impl AnyMap {
     }
 }
 
-impl AsRef<RawAnyMap> for AnyMap {
-    fn as_ref(&self) -> &RawAnyMap {
+impl<A: ?Sized + UncheckedAnyExt> AsRef<RawMap<A>> for Map<A> {
+    fn as_ref(&self) -> &RawMap<A> {
         &self.raw
     }
 }
 
-impl AsMut<RawAnyMap> for AnyMap {
-    fn as_mut(&mut self) -> &mut RawAnyMap {
+impl<A: ?Sized + UncheckedAnyExt> AsMut<RawMap<A>> for Map<A> {
+    fn as_mut(&mut self) -> &mut RawMap<A> {
         &mut self.raw
     }
 }
 
-impl Into<RawAnyMap> for AnyMap {
-    fn into(self) -> RawAnyMap {
+impl<A: ?Sized + UncheckedAnyExt> Into<RawMap<A>> for Map<A> {
+    fn into(self) -> RawMap<A> {
         self.raw
     }
 }
 
-/// A view into a single occupied location in an `AnyMap`.
-pub struct OccupiedEntry<'a, V: 'a> {
-    inner: raw::OccupiedEntry<'a>,
+/// A view into a single occupied location in an `Map`.
+pub struct OccupiedEntry<'a, A: ?Sized + UncheckedAnyExt, V: 'a> {
+    inner: raw::OccupiedEntry<'a, A>,
     type_: PhantomData<V>,
 }
 
-/// A view into a single empty location in an `AnyMap`.
-pub struct VacantEntry<'a, V: 'a> {
-    inner: raw::VacantEntry<'a>,
+/// A view into a single empty location in an `Map`.
+pub struct VacantEntry<'a, A: ?Sized + UncheckedAnyExt, V: 'a> {
+    inner: raw::VacantEntry<'a, A>,
     type_: PhantomData<V>,
 }
 
-/// A view into a single location in an `AnyMap`, which may be vacant or occupied.
-pub enum Entry<'a, V: 'a> {
+/// A view into a single location in an `Map`, which may be vacant or occupied.
+pub enum Entry<'a, A: ?Sized + UncheckedAnyExt, V: 'a> {
     /// An occupied Entry
-    Occupied(OccupiedEntry<'a, V>),
+    Occupied(OccupiedEntry<'a, A, V>),
     /// A vacant Entry
-    Vacant(VacantEntry<'a, V>),
+    Vacant(VacantEntry<'a, A, V>),
 }
 
-impl<'a, V: Any + Clone> Entry<'a, V> {
+impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A> + Clone> Entry<'a, A, V> {
     /// Ensures a value is in the entry by inserting the default if empty, and returns
     /// a mutable reference to the value in the entry.
     pub fn or_insert(self, default: V) -> &'a mut V {
@@ -233,7 +254,7 @@ impl<'a, V: Any + Clone> Entry<'a, V> {
     }
 }
 
-impl<'a, V: Any> OccupiedEntry<'a, V> {
+impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A>> OccupiedEntry<'a, A, V> {
     /// Gets a reference to the value in the entry
     pub fn get(&self) -> &V {
         unsafe { self.inner.get().downcast_ref_unchecked() }
@@ -252,7 +273,7 @@ impl<'a, V: Any> OccupiedEntry<'a, V> {
 
     /// Sets the value of the entry, and returns the entry's old value
     pub fn insert(&mut self, value: V) -> V {
-        unsafe { *self.inner.insert(Box::new(value)).downcast_unchecked() }
+        unsafe { *self.inner.insert(value.into_box()).downcast_unchecked() }
     }
 
     /// Takes the value out of the entry, and returns it
@@ -261,11 +282,11 @@ impl<'a, V: Any> OccupiedEntry<'a, V> {
     }
 }
 
-impl<'a, V: Any> VacantEntry<'a, V> {
+impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A>> VacantEntry<'a, A, V> {
     /// Sets the value of the entry with the VacantEntry's key,
     /// and returns a mutable reference to it
     pub fn insert(self, value: V) -> &'a mut V {
-        unsafe { self.inner.insert(Box::new(value)).downcast_mut_unchecked() }
+        unsafe { self.inner.insert(value.into_box()).downcast_mut_unchecked() }
     }
 }
 
@@ -303,7 +324,8 @@ fn bench_get_present(b: &mut ::test::Bencher) {
 
 #[cfg(test)]
 mod tests {
-    use {AnyMap, Entry};
+    use {Map, AnyMap, Entry};
+    use any::{Any, CloneAny};
 
     #[derive(Clone, Debug, PartialEq)] struct A(i32);
     #[derive(Clone, Debug, PartialEq)] struct B(i32);
@@ -380,10 +402,9 @@ mod tests {
         assert_eq!(map.len(), 7);
     }
 
-    #[cfg(feature = "clone")]
     #[test]
     fn test_clone() {
-        let mut map = AnyMap::new();
+        let mut map: Map<CloneAny> = Map::new();
         let _ = map.insert(A(1));
         let _ = map.insert(B(2));
         let _ = map.insert(D(3));
@@ -401,10 +422,22 @@ mod tests {
         assert_eq!(map2.get::<J>(), Some(&J(6)));
     }
 
-    #[cfg(feature = "concurrent")]
     #[test]
-    fn test_concurrent() {
-        fn assert_concurrent<T: Send + Sync>() { }
-        assert_concurrent::<AnyMap>();
+    fn test_varieties() {
+        fn assert_send<T: Send>() { }
+        fn assert_sync<T: Sync>() { }
+        fn assert_clone<T: Clone>() { }
+        assert_send::<Map<Any + Send>>();
+        assert_send::<Map<Any + Send + Sync>>();
+        assert_sync::<Map<Any + Sync>>();
+        assert_sync::<Map<Any + Send + Sync>>();
+        assert_send::<Map<CloneAny + Send>>();
+        assert_send::<Map<CloneAny + Send + Sync>>();
+        assert_sync::<Map<CloneAny + Sync>>();
+        assert_sync::<Map<CloneAny + Send + Sync>>();
+        assert_clone::<Map<CloneAny + Send>>();
+        assert_clone::<Map<CloneAny + Send + Sync>>();
+        assert_clone::<Map<CloneAny + Sync>>();
+        assert_clone::<Map<CloneAny + Send + Sync>>();
     }
 }
