@@ -116,15 +116,9 @@ pub trait IntoBox<A: ?Sized + UncheckedAnyExt>: Any {
 
 macro_rules! implement {
     ($base:ident, $(+ $bounds:ident)*) => {
-        impl<'a> fmt::Debug for &'a ($base $(+ $bounds)*) {
+        impl fmt::Debug for $base $(+ $bounds)* {
             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                f.pad(stringify!(&($base $(+ $bounds)*)))
-            }
-        }
-
-        impl<'a> fmt::Debug for Box<$base $(+ $bounds)*> {
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                f.pad(stringify!(Box<$base $(+ $bounds)*>))
+                f.pad(stringify!($base $(+ $bounds)*))
             }
         }
 
