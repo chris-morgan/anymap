@@ -11,5 +11,4 @@ keywords = ["container", "data-structure", "map"]
 license = "MIT/Apache-2.0"
 
 [features]
-clone = []
 nightly = []
