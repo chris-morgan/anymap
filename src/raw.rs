@@ -5,31 +5,31 @@
 use std::any::TypeId;
 use std::borrow::Borrow;
 use std::collections::hash_map::{self, HashMap};
-#[cfg(feature = "nightly")]
+#[cfg(feature = "unstable")]
 use std::collections::hash_state::HashState;
 use std::default::Default;
 use std::hash::Hash;
-#[cfg(feature = "nightly")]
+#[cfg(feature = "unstable")]
 use std::hash::Hasher;
 use std::iter::IntoIterator;
-#[cfg(feature = "nightly")]
+#[cfg(feature = "unstable")]
 use std::mem;
 use std::ops::{Index, IndexMut};
-#[cfg(feature = "nightly")]
+#[cfg(feature = "unstable")]
 use std::ptr;
 
 use any::{Any, UncheckedAnyExt};
 
-#[cfg(feature = "nightly")]
+#[cfg(feature = "unstable")]
 struct TypeIdHasher {
     value: u64,
 }
 
 #[derive(Clone)]
-#[cfg(feature = "nightly")]
+#[cfg(feature = "unstable")]
 struct TypeIdState;
 
-#[cfg(feature = "nightly")]
+#[cfg(feature = "unstable")]
 impl HashState for TypeIdState {
     type Hasher = TypeIdHasher;
 
@@ -38,7 +38,7 @@ impl HashState for TypeIdState {
     }
 }
 
-#[cfg(feature = "nightly")]
+#[cfg(feature = "unstable")]
 impl Hasher for TypeIdHasher {
     #[inline(always)]
     fn write(&mut self, bytes: &[u8]) {
@@ -63,10 +63,10 @@ impl Hasher for TypeIdHasher {
 /// doesn’t tend to be so very useful. Still, if you need it, it’s here.
 #[derive(Debug)]
 pub struct RawMap<A: ?Sized + UncheckedAnyExt = Any> {
-    #[cfg(feature = "nightly")]
+    #[cfg(feature = "unstable")]
     inner: HashMap<TypeId, Box<A>, TypeIdState>,
 
-    #[cfg(not(feature = "nightly"))]
+    #[cfg(not(feature = "unstable"))]
     inner: HashMap<TypeId, Box<A>>,
 }
 
@@ -85,14 +85,14 @@ impl<A: ?Sized + UncheckedAnyExt> Default for RawMap<A> {
     }
 }
 
-#[cfg(feature = "nightly")]
+#[cfg(feature = "unstable")]
 impl_common_methods! {
     field: RawMap.inner;
     new() => HashMap::with_hash_state(TypeIdState);
     with_capacity(capacity) => HashMap::with_capacity_and_hash_state(capacity, TypeIdState);
 }
 
-#[cfg(not(feature = "nightly"))]
+#[cfg(not(feature = "unstable"))]
 impl_common_methods! {
     field: RawMap.inner;
     new() => HashMap::new();
@@ -140,17 +140,17 @@ impl<A: ?Sized + UncheckedAnyExt> ExactSizeIterator for IntoIter<A> {
 }
 
 /// RawMap drain iterator.
-#[cfg(feature = "nightly")]
+#[cfg(feature = "unstable")]
 pub struct Drain<'a, A: ?Sized + UncheckedAnyExt> {
     inner: hash_map::Drain<'a, TypeId, Box<A>>,
 }
-#[cfg(feature = "nightly")]
+#[cfg(feature = "unstable")]
 impl<'a, A: ?Sized + UncheckedAnyExt> Iterator for Drain<'a, A> {
     type Item = Box<A>;
     #[inline] fn next(&mut self) -> Option<Box<A>> { self.inner.next().map(|x| x.1) }
     #[inline] fn size_hint(&self) -> (usize, Option<usize>) { self.inner.size_hint() }
 }
-#[cfg(feature = "nightly")]
+#[cfg(feature = "unstable")]
 impl<'a, A: ?Sized + UncheckedAnyExt> ExactSizeIterator for Drain<'a, A> {
     #[inline] fn len(&self) -> usize { self.inner.len() }
 }
@@ -182,7 +182,7 @@ impl<A: ?Sized + UncheckedAnyExt> RawMap<A> {
     ///
     /// Keeps the allocated memory for reuse.
     #[inline]
-    #[cfg(feature = "nightly")]
+    #[cfg(feature = "unstable")]
     pub fn drain(&mut self) -> Drain<A> {
         Drain {
             inner: self.inner.drain(),

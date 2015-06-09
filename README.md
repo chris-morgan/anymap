@@ -18,7 +18,7 @@ Instructions
 
 Cargo all the way: it is `anymap` on crates.io.
 
-For users of the nightly instead of the beta of rustc there are a couple of things behind the `nightly` feature like a `drain` method on the `RawAnyMap` and a more efficient hashing technique which makes lookup in the map a tad faster.
+For users of the nightly instead of the beta of rustc there are a couple of things behind the `unstable` feature like a `drain` method on the `RawAnyMap` and a more efficient hashing technique which makes lookup in the map a tad faster.
 
 Author
 ------

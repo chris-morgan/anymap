@@ -1,9 +1,12 @@
 language: rust
+rust:
+  - nightly
+  - beta
 env:
   global:
     - secure: nR+DJRUQ9v03nNZMpMu1tGKLKBAqdQsTIAr8ffdl+DUEh3b2jvQ+vLLNFLPjsloqhoOXo7cWO7qVpiE4ZOq2lNDURQjdiZGFjh/Y5+xKy2BqFdV7qQ1JoBzsMyx28tQTYz0mtBsACiCYKKb+ddNX5hpwrsjp8cS7htZktA5kbiU=
 script:
-  - if [[ "$(rustc --version)" =~ -(dev|nightly) ]]; then cargo test --features nightly; else ! cargo test --features nightly; fi
+  - if [[ "$(rustc --version)" =~ -(dev|nightly) ]]; then cargo test --features unstable; else ! cargo test --features unstable; fi
   - cargo test
   - cargo doc
 after_script:

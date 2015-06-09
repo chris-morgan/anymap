@@ -88,10 +88,10 @@ macro_rules! impl_clone {
     }
 }
 
-#[cfg(feature = "nightly")]
+#[cfg(feature = "unstable")]
 use std::raw::TraitObject;
 
-#[cfg(not(feature = "nightly"))]
+#[cfg(not(feature = "unstable"))]
 #[repr(C)]
 #[allow(raw_pointer_derive)]
 #[derive(Copy, Clone)]
