@@ -1,10 +1,10 @@
 //! This crate provides the `AnyMap` type, a safe and convenient store for one value of each type.
 
 #![cfg_attr(feature = "unstable", feature(core, std_misc))]
-#![cfg_attr(test, feature(test))]
+#![cfg_attr(all(feature = "unstable", test), feature(test))]
 #![warn(missing_docs, unused_results)]
 
-#[cfg(test)]
+#[cfg(all(feature = "unstable", test))]
 extern crate test;
 
 use std::any::TypeId;
@@ -290,6 +290,7 @@ impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A>> VacantEntry<'a, A, V> {
     }
 }
 
+#[cfg(feature = "unstable")]
 #[bench]
 fn bench_insertion(b: &mut ::test::Bencher) {
     b.iter(|| {
@@ -300,6 +301,7 @@ fn bench_insertion(b: &mut ::test::Bencher) {
     })
 }
 
+#[cfg(feature = "unstable")]
 #[bench]
 fn bench_get_missing(b: &mut ::test::Bencher) {
     b.iter(|| {
@@ -310,6 +312,7 @@ fn bench_get_missing(b: &mut ::test::Bencher) {
     })
 }
 
+#[cfg(feature = "unstable")]
 #[bench]
 fn bench_get_present(b: &mut ::test::Bencher) {
     b.iter(|| {
