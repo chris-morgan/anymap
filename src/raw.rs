@@ -7,11 +7,9 @@ use std::borrow::Borrow;
 use std::collections::hash_map::{self, HashMap};
 #[cfg(feature = "unstable")]
 use std::collections::hash_state::HashState;
-use std::default::Default;
 use std::hash::Hash;
 #[cfg(feature = "unstable")]
 use std::hash::Hasher;
-use std::iter::IntoIterator;
 #[cfg(feature = "unstable")]
 use std::mem;
 use std::ops::{Index, IndexMut};

@@ -93,7 +93,6 @@ use std::raw::TraitObject;
 
 #[cfg(not(feature = "unstable"))]
 #[repr(C)]
-#[allow(raw_pointer_derive)]
 #[derive(Copy, Clone)]
 struct TraitObject {
     pub data: *mut (),
