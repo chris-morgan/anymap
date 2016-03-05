@@ -1,6 +1,5 @@
 //! This crate provides the `AnyMap` type, a safe and convenient store for one value of each type.
 
-#![cfg_attr(feature = "unstable", feature(hashmap_hasher, raw))]
 #![cfg_attr(all(feature = "unstable", test), feature(test))]
 #![warn(missing_docs, unused_results)]
 

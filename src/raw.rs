@@ -5,38 +5,19 @@
 use std::any::TypeId;
 use std::borrow::Borrow;
 use std::collections::hash_map::{self, HashMap};
-#[cfg(feature = "unstable")]
-use std::collections::hash_state::HashState;
 use std::hash::Hash;
-#[cfg(feature = "unstable")]
-use std::hash::Hasher;
-#[cfg(feature = "unstable")]
+use std::hash::{Hasher, BuildHasherDefault};
 use std::mem;
 use std::ops::{Index, IndexMut};
-#[cfg(feature = "unstable")]
 use std::ptr;
 
 use any::{Any, UncheckedAnyExt};
 
-#[cfg(feature = "unstable")]
+#[derive(Default)]
 struct TypeIdHasher {
     value: u64,
 }
 
-#[derive(Clone)]
-#[cfg(feature = "unstable")]
-struct TypeIdState;
-
-#[cfg(feature = "unstable")]
-impl HashState for TypeIdState {
-    type Hasher = TypeIdHasher;
-
-    fn hasher(&self) -> TypeIdHasher {
-        TypeIdHasher { value: 0 }
-    }
-}
-
-#[cfg(feature = "unstable")]
 impl Hasher for TypeIdHasher {
     #[inline(always)]
     fn write(&mut self, bytes: &[u8]) {
@@ -51,7 +32,6 @@ impl Hasher for TypeIdHasher {
     fn finish(&self) -> u64 { self.value }
 }
 
-
 /// The raw, underlying form of a `Map`.
 ///
 /// At its essence, this is a wrapper around `HashMap<TypeId, Box<Any>>`, with the portions that
@@ -61,11 +41,7 @@ impl Hasher for TypeIdHasher {
 /// doesn’t tend to be so very useful. Still, if you need it, it’s here.
 #[derive(Debug)]
 pub struct RawMap<A: ?Sized + UncheckedAnyExt = Any> {
-    #[cfg(feature = "unstable")]
-    inner: HashMap<TypeId, Box<A>, TypeIdState>,
-
-    #[cfg(not(feature = "unstable"))]
-    inner: HashMap<TypeId, Box<A>>,
+    inner: HashMap<TypeId, Box<A>, BuildHasherDefault<TypeIdHasher>>,
 }
 
 // #[derive(Clone)] would want A to implement Clone, but in reality it’s only Box<A> that can.
@@ -83,18 +59,10 @@ impl<A: ?Sized + UncheckedAnyExt> Default for RawMap<A> {
     }
 }
 
-#[cfg(feature = "unstable")]
 impl_common_methods! {
     field: RawMap.inner;
-    new() => HashMap::with_hash_state(TypeIdState);
-    with_capacity(capacity) => HashMap::with_capacity_and_hash_state(capacity, TypeIdState);
-}
-
-#[cfg(not(feature = "unstable"))]
-impl_common_methods! {
-    field: RawMap.inner;
-    new() => HashMap::new();
-    with_capacity(capacity) => HashMap::with_capacity(capacity);
+    new() => HashMap::with_hasher(Default::default());
+    with_capacity(capacity) => HashMap::with_capacity_and_hasher(capacity, Default::default());
 }
 
 /// RawMap iterator.
