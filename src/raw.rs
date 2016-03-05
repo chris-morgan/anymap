@@ -106,17 +106,14 @@ impl<A: ?Sized + UncheckedAnyExt> ExactSizeIterator for IntoIter<A> {
 }
 
 /// RawMap drain iterator.
-#[cfg(feature = "unstable")]
 pub struct Drain<'a, A: ?Sized + UncheckedAnyExt> {
     inner: hash_map::Drain<'a, TypeId, Box<A>>,
 }
-#[cfg(feature = "unstable")]
 impl<'a, A: ?Sized + UncheckedAnyExt> Iterator for Drain<'a, A> {
     type Item = Box<A>;
     #[inline] fn next(&mut self) -> Option<Box<A>> { self.inner.next().map(|x| x.1) }
     #[inline] fn size_hint(&self) -> (usize, Option<usize>) { self.inner.size_hint() }
 }
-#[cfg(feature = "unstable")]
 impl<'a, A: ?Sized + UncheckedAnyExt> ExactSizeIterator for Drain<'a, A> {
     #[inline] fn len(&self) -> usize { self.inner.len() }
 }
@@ -148,7 +145,6 @@ impl<A: ?Sized + UncheckedAnyExt> RawMap<A> {
     ///
     /// Keeps the allocated memory for reuse.
     #[inline]
-    #[cfg(feature = "unstable")]
     pub fn drain(&mut self) -> Drain<A> {
         Drain {
             inner: self.inner.drain(),
