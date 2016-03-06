@@ -24,12 +24,27 @@ impl Hasher for TypeIdHasher {
         // This expects to receive one and exactly one 64-bit value
         debug_assert!(bytes.len() == 8);
         unsafe {
-            ptr::copy_nonoverlapping(&mut self.value, mem::transmute(&bytes[0]), 1)
+            ptr::copy_nonoverlapping(mem::transmute(&bytes[0]), &mut self.value, 1)
         }
     }
 
     #[inline(always)]
     fn finish(&self) -> u64 { self.value }
+}
+
+#[test]
+fn type_id_hasher() {
+    fn verify_hashing_with(type_id: TypeId) {
+        let mut hasher = TypeIdHasher::default();
+        type_id.hash(&mut hasher);
+        assert_eq!(hasher.finish(), unsafe { mem::transmute::<TypeId, u64>(type_id) });
+    }
+    // Pick a variety of types, just to demonstrate it’s all sane. Normal, zero-sized, unsized, &c.
+    verify_hashing_with(TypeId::of::<usize>());
+    verify_hashing_with(TypeId::of::<()>());
+    verify_hashing_with(TypeId::of::<str>());
+    verify_hashing_with(TypeId::of::<&str>());
+    verify_hashing_with(TypeId::of::<Vec<u8>>());
 }
 
 /// The raw, underlying form of a `Map`.
