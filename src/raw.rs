@@ -19,7 +19,7 @@ struct TypeIdHasher {
 }
 
 impl Hasher for TypeIdHasher {
-    #[inline(always)]
+    #[inline]
     fn write(&mut self, bytes: &[u8]) {
         // This expects to receive one and exactly one 64-bit value
         debug_assert!(bytes.len() == 8);
@@ -28,7 +28,7 @@ impl Hasher for TypeIdHasher {
         }
     }
 
-    #[inline(always)]
+    #[inline]
     fn finish(&self) -> u64 { self.value }
 }
 
@@ -229,13 +229,13 @@ impl<A: ?Sized + UncheckedAnyExt> RawMap<A> {
 impl<A: ?Sized + UncheckedAnyExt, Q> Index<Q> for RawMap<A> where TypeId: Borrow<Q>, Q: Eq + Hash {
     type Output = A;
 
-    fn index<'a>(&'a self, index: Q) -> &'a A {
+    fn index(&self, index: Q) -> &A {
         self.get(&index).expect("no entry found for key")
     }
 }
 
 impl<A: ?Sized + UncheckedAnyExt, Q> IndexMut<Q> for RawMap<A> where TypeId: Borrow<Q>, Q: Eq + Hash {
-    fn index_mut<'a>(&'a mut self, index: Q) -> &'a mut A {
+    fn index_mut(&mut self, index: Q) -> &mut A {
         self.get_mut(&index).expect("no entry found for key")
     }
 }
