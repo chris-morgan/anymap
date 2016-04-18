@@ -122,10 +122,12 @@ macro_rules! implement {
         }
 
         impl UncheckedAnyExt for $base $(+ $bounds)* {
+            #[allow(transmute_ptr_to_ref)]
             unsafe fn downcast_ref_unchecked<T: 'static>(&self) -> &T {
                 mem::transmute(mem::transmute::<_, TraitObject>(self).data)
             }
 
+            #[allow(transmute_ptr_to_ref)]
             unsafe fn downcast_mut_unchecked<T: 'static>(&mut self) -> &mut T {
                 mem::transmute(mem::transmute::<_, TraitObject>(self).data)
             }

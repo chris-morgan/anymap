@@ -80,7 +80,7 @@ impl_common_methods! {
     with_capacity(capacity) => HashMap::with_capacity_and_hasher(capacity, Default::default());
 }
 
-/// RawMap iterator.
+/// `RawMap` iterator.
 #[derive(Clone)]
 pub struct Iter<'a, A: ?Sized + UncheckedAnyExt> {
     inner: hash_map::Iter<'a, TypeId, Box<A>>,
@@ -94,7 +94,7 @@ impl<'a, A: ?Sized + UncheckedAnyExt> ExactSizeIterator for Iter<'a, A> {
     #[inline] fn len(&self) -> usize { self.inner.len() }
 }
 
-/// RawMap mutable iterator.
+/// `RawMap` mutable iterator.
 pub struct IterMut<'a, A: ?Sized + UncheckedAnyExt> {
     inner: hash_map::IterMut<'a, TypeId, Box<A>>,
 }
@@ -107,7 +107,7 @@ impl<'a, A: ?Sized + UncheckedAnyExt> ExactSizeIterator for IterMut<'a, A> {
     #[inline] fn len(&self) -> usize { self.inner.len() }
 }
 
-/// RawMap move iterator.
+/// `RawMap` move iterator.
 pub struct IntoIter<A: ?Sized + UncheckedAnyExt> {
     inner: hash_map::IntoIter<TypeId, Box<A>>,
 }
@@ -120,7 +120,7 @@ impl<A: ?Sized + UncheckedAnyExt> ExactSizeIterator for IntoIter<A> {
     #[inline] fn len(&self) -> usize { self.inner.len() }
 }
 
-/// RawMap drain iterator.
+/// `RawMap` drain iterator.
 pub struct Drain<'a, A: ?Sized + UncheckedAnyExt> {
     inner: hash_map::Drain<'a, TypeId, Box<A>>,
 }
