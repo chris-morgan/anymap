@@ -233,7 +233,7 @@ pub enum Entry<'a, A: ?Sized + UncheckedAnyExt, V: 'a> {
     Vacant(VacantEntry<'a, A, V>),
 }
 
-impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A> + Clone> Entry<'a, A, V> {
+impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A>> Entry<'a, A, V> {
     /// Ensures a value is in the entry by inserting the default if empty, and returns
     /// a mutable reference to the value in the entry.
     pub fn or_insert(self, default: V) -> &'a mut V {
@@ -337,72 +337,79 @@ mod tests {
     #[derive(Clone, Debug, PartialEq)] struct F(i32);
     #[derive(Clone, Debug, PartialEq)] struct J(i32);
 
-    #[test]
-    fn test_entry() {
-        let mut map: AnyMap = AnyMap::new();
-        assert_eq!(map.insert(A(10)), None);
-        assert_eq!(map.insert(B(20)), None);
-        assert_eq!(map.insert(C(30)), None);
-        assert_eq!(map.insert(D(40)), None);
-        assert_eq!(map.insert(E(50)), None);
-        assert_eq!(map.insert(F(60)), None);
+    macro_rules! test_entry {
+        ($name:ident, $init:ty) => {
+            #[test]
+            fn $name() {
+                let mut map = <$init>::new();
+                assert_eq!(map.insert(A(10)), None);
+                assert_eq!(map.insert(B(20)), None);
+                assert_eq!(map.insert(C(30)), None);
+                assert_eq!(map.insert(D(40)), None);
+                assert_eq!(map.insert(E(50)), None);
+                assert_eq!(map.insert(F(60)), None);
 
-        // Existing key (insert)
-        match map.entry::<A>() {
-            Entry::Vacant(_) => unreachable!(),
-            Entry::Occupied(mut view) => {
-                assert_eq!(view.get(), &A(10));
-                assert_eq!(view.insert(A(100)), A(10));
+                // Existing key (insert)
+                match map.entry::<A>() {
+                    Entry::Vacant(_) => unreachable!(),
+                    Entry::Occupied(mut view) => {
+                        assert_eq!(view.get(), &A(10));
+                        assert_eq!(view.insert(A(100)), A(10));
+                    }
+                }
+                assert_eq!(map.get::<A>().unwrap(), &A(100));
+                assert_eq!(map.len(), 6);
+
+
+                // Existing key (update)
+                match map.entry::<B>() {
+                    Entry::Vacant(_) => unreachable!(),
+                    Entry::Occupied(mut view) => {
+                        let v = view.get_mut();
+                        let new_v = B(v.0 * 10);
+                        *v = new_v;
+                    }
+                }
+                assert_eq!(map.get::<B>().unwrap(), &B(200));
+                assert_eq!(map.len(), 6);
+
+
+                // Existing key (remove)
+                match map.entry::<C>() {
+                    Entry::Vacant(_) => unreachable!(),
+                    Entry::Occupied(view) => {
+                        assert_eq!(view.remove(), C(30));
+                    }
+                }
+                assert_eq!(map.get::<C>(), None);
+                assert_eq!(map.len(), 5);
+
+
+                // Inexistent key (insert)
+                match map.entry::<J>() {
+                    Entry::Occupied(_) => unreachable!(),
+                    Entry::Vacant(view) => {
+                        assert_eq!(*view.insert(J(1000)), J(1000));
+                    }
+                }
+                assert_eq!(map.get::<J>().unwrap(), &J(1000));
+                assert_eq!(map.len(), 6);
+
+                // Entry.or_insert on existing key
+                map.entry::<B>().or_insert(B(71)).0 += 1;
+                assert_eq!(map.get::<B>().unwrap(), &B(201));
+                assert_eq!(map.len(), 6);
+
+                // Entry.or_insert on nonexisting key
+                map.entry::<C>().or_insert(C(300)).0 += 1;
+                assert_eq!(map.get::<C>().unwrap(), &C(301));
+                assert_eq!(map.len(), 7);
             }
         }
-        assert_eq!(map.get::<A>().unwrap(), &A(100));
-        assert_eq!(map.len(), 6);
-
-
-        // Existing key (update)
-        match map.entry::<B>() {
-            Entry::Vacant(_) => unreachable!(),
-            Entry::Occupied(mut view) => {
-                let v = view.get_mut();
-                let new_v = B(v.0 * 10);
-                *v = new_v;
-            }
-        }
-        assert_eq!(map.get::<B>().unwrap(), &B(200));
-        assert_eq!(map.len(), 6);
-
-
-        // Existing key (remove)
-        match map.entry::<C>() {
-            Entry::Vacant(_) => unreachable!(),
-            Entry::Occupied(view) => {
-                assert_eq!(view.remove(), C(30));
-            }
-        }
-        assert_eq!(map.get::<C>(), None);
-        assert_eq!(map.len(), 5);
-
-
-        // Inexistent key (insert)
-        match map.entry::<J>() {
-            Entry::Occupied(_) => unreachable!(),
-            Entry::Vacant(view) => {
-                assert_eq!(*view.insert(J(1000)), J(1000));
-            }
-        }
-        assert_eq!(map.get::<J>().unwrap(), &J(1000));
-        assert_eq!(map.len(), 6);
-
-        // Entry.or_insert on existing key
-        map.entry::<B>().or_insert(B(71)).0 += 1;
-        assert_eq!(map.get::<B>().unwrap(), &B(201));
-        assert_eq!(map.len(), 6);
-
-        // Entry.or_insert on nonexisting key
-        map.entry::<C>().or_insert(C(300)).0 += 1;
-        assert_eq!(map.get::<C>().unwrap(), &C(301));
-        assert_eq!(map.len(), 7);
     }
+
+    test_entry!(test_entry_any, AnyMap);
+    test_entry!(test_entry_cloneany, Map<CloneAny>);
 
     #[test]
     fn test_clone() {
