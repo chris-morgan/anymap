@@ -293,6 +293,7 @@ impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A>> VacantEntry<'a, A, V> {
 mod bench {
     use AnyMap;
     use test::Bencher;
+    use test::black_box;
 
     #[bench]
     fn insertion(b: &mut Bencher) {
@@ -331,43 +332,25 @@ mod bench {
             #[bench]
             fn $name(b: &mut Bencher) {
                 $(
-                    #[derive(Debug, PartialEq)]
                     struct $T(&'static str);
-
-                    impl Default for $T {
-                        fn default() -> $T {
-                            $T(stringify!($T))
-                        }
-                    }
                 )*
 
                 b.iter(|| {
                     let mut data = AnyMap::new();
                     $(
-                        assert_eq!(data.insert($T::default()), None::<$T>);
+                        let _ = black_box(data.insert($T(stringify!($T))));
                     )*
                     $(
-                        assert_eq!(data.get(), Some(&$T::default()));
+                        let _ = black_box(data.get::<$T>());
                     )*
                 })
             }
         );
     }
 
-    // Pathalogical rustc/llvm case here. This takes *absurdly* long to compile (it adds something
-    // like 100 seconds), peaking at over 1GB of RAM (though -Z time-passes doesn’t pick up on
-    // that, as it’s in the middle of the “llvm modules passes [0]” that it happens and it’s all
-    // freed at the end of that pass) and adding over 700KB to the final build. (3KB per type is
-    // more than I expected, reasonably or unreasonably.) TODO determine why and get it fixed.
-    //
-    // Selected rustc -Z time-passes output, with and without this block:
-    //
-    // - item-bodies checking:   0.4 seconds without,  5.2 seconds with;
-    // - borrow checking:        0.1 seconds without, 11   seconds with;
-    // - llvm module passes [0]: 2.5 seconds without, 49   seconds with;
-    // - codegen passes [0]:     0.6 seconds without, 11.2 seconds with.
-    //
-    // Very not good.
+    // Caution: if the macro does too much (e.g. assertions) this goes from being slow to being
+    // *really* slow (like add a minute for each assertion on it) and memory-hungry (like, adding
+    // several hundred megabytes to the peak for each assertion).
     big_benchmarks! {
         insert_and_get_on_260_types,
         A0 B0 C0 D0 E0 F0 G0 H0 I0 J0 K0 L0 M0 N0 O0 P0 Q0 R0 S0 T0 U0 V0 W0 X0 Y0 Z0
