@@ -3,7 +3,6 @@
 //! This stuff is all based on `std::any`, but goes a little further, with `CloneAny` being a
 //! cloneable `Any` and with the `Send` and `Sync` bounds possible on both `Any` and `CloneAny`.
 
-use std::mem;
 use std::fmt;
 use std::any::Any as StdAny;
 
@@ -88,17 +87,6 @@ macro_rules! impl_clone {
     }
 }
 
-#[cfg(feature = "unstable")]
-use std::raw::TraitObject;
-
-#[cfg(not(feature = "unstable"))]
-#[repr(C)]
-#[derive(Copy, Clone)]
-struct TraitObject {
-    pub data: *mut (),
-    pub vtable: *mut (),
-}
-
 #[allow(missing_docs)]  // Bogus warning (it’s not public outside the crate), ☹
 pub trait UncheckedAnyExt: Any {
     unsafe fn downcast_ref_unchecked<T: Any>(&self) -> &T;
@@ -123,15 +111,15 @@ macro_rules! implement {
 
         impl UncheckedAnyExt for $base $(+ $bounds)* {
             unsafe fn downcast_ref_unchecked<T: 'static>(&self) -> &T {
-                mem::transmute(mem::transmute::<_, TraitObject>(self).data)
+                &*(self as *const Self as *const T)
             }
 
             unsafe fn downcast_mut_unchecked<T: 'static>(&mut self) -> &mut T {
-                mem::transmute(mem::transmute::<_, TraitObject>(self).data)
+                &mut *(self as *mut Self as *mut T)
             }
 
             unsafe fn downcast_unchecked<T: 'static>(self: Box<Self>) -> Box<T> {
-                mem::transmute(mem::transmute::<_, TraitObject>(self).data)
+                Box::from_raw(Box::into_raw(self) as *mut T)
             }
         }
 
