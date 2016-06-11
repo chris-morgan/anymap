@@ -61,6 +61,7 @@ pub struct RawMap<A: ?Sized + UncheckedAnyExt = Any> {
 
 // #[derive(Clone)] would want A to implement Clone, but in reality it’s only Box<A> that can.
 impl<A: ?Sized + UncheckedAnyExt> Clone for RawMap<A> where Box<A>: Clone {
+    #[inline]
     fn clone(&self) -> RawMap<A> {
         RawMap {
             inner: self.inner.clone(),
@@ -69,6 +70,7 @@ impl<A: ?Sized + UncheckedAnyExt> Clone for RawMap<A> where Box<A>: Clone {
 }
 
 impl<A: ?Sized + UncheckedAnyExt> Default for RawMap<A> {
+    #[inline]
     fn default() -> RawMap<A> {
         RawMap::new()
     }
@@ -167,6 +169,7 @@ impl<A: ?Sized + UncheckedAnyExt> RawMap<A> {
     }
 
     /// Gets the entry for the given type in the collection for in-place manipulation.
+    #[inline]
     pub fn entry(&mut self, key: TypeId) -> Entry<A> {
         match self.inner.entry(key) {
             hash_map::Entry::Occupied(e) => Entry::Occupied(OccupiedEntry {
@@ -182,6 +185,7 @@ impl<A: ?Sized + UncheckedAnyExt> RawMap<A> {
     ///
     /// The key may be any borrowed form of the map's key type, but `Hash` and `Eq` on the borrowed
     /// form *must* match those for the key type.
+    #[inline]
     pub fn get<Q: ?Sized>(&self, k: &Q) -> Option<&A>
     where TypeId: Borrow<Q>, Q: Hash + Eq {
         self.inner.get(k).map(|x| &**x)
@@ -191,6 +195,7 @@ impl<A: ?Sized + UncheckedAnyExt> RawMap<A> {
     ///
     /// The key may be any borrowed form of the map's key type, but `Hash` and `Eq` on the borrowed
     /// form *must* match those for the key type.
+    #[inline]
     pub fn contains_key<Q: ?Sized>(&self, k: &Q) -> bool
     where TypeId: Borrow<Q>, Q: Hash + Eq {
         self.inner.contains_key(k)
@@ -200,6 +205,7 @@ impl<A: ?Sized + UncheckedAnyExt> RawMap<A> {
     ///
     /// The key may be any borrowed form of the map's key type, but `Hash` and `Eq` on the borrowed
     /// form *must* match those for the key type.
+    #[inline]
     pub fn get_mut<Q: ?Sized>(&mut self, k: &Q) -> Option<&mut A>
     where TypeId: Borrow<Q>, Q: Hash + Eq {
         self.inner.get_mut(k).map(|x| &mut **x)
@@ -210,6 +216,7 @@ impl<A: ?Sized + UncheckedAnyExt> RawMap<A> {
     ///
     /// It is the caller’s responsibility to ensure that the key corresponds with the type ID of
     /// the value. If they do not, memory safety may be violated.
+    #[inline]
     pub unsafe fn insert(&mut self, key: TypeId, value: Box<A>) -> Option<Box<A>> {
         self.inner.insert(key, value)
     }
@@ -219,6 +226,7 @@ impl<A: ?Sized + UncheckedAnyExt> RawMap<A> {
     ///
     /// The key may be any borrowed form of the map's key type, but `Hash` and `Eq` on the borrowed
     /// form *must* match those for the key type.
+    #[inline]
     pub fn remove<Q: ?Sized>(&mut self, k: &Q) -> Option<Box<A>>
     where TypeId: Borrow<Q>, Q: Hash + Eq {
         self.inner.remove(k)
@@ -229,12 +237,14 @@ impl<A: ?Sized + UncheckedAnyExt> RawMap<A> {
 impl<A: ?Sized + UncheckedAnyExt, Q> Index<Q> for RawMap<A> where TypeId: Borrow<Q>, Q: Eq + Hash {
     type Output = A;
 
+    #[inline]
     fn index(&self, index: Q) -> &A {
         self.get(&index).expect("no entry found for key")
     }
 }
 
 impl<A: ?Sized + UncheckedAnyExt, Q> IndexMut<Q> for RawMap<A> where TypeId: Borrow<Q>, Q: Eq + Hash {
+    #[inline]
     fn index_mut(&mut self, index: Q) -> &mut A {
         self.get_mut(&index).expect("no entry found for key")
     }
@@ -244,6 +254,7 @@ impl<A: ?Sized + UncheckedAnyExt> IntoIterator for RawMap<A> {
     type Item = Box<A>;
     type IntoIter = IntoIter<A>;
 
+    #[inline]
     fn into_iter(self) -> IntoIter<A> {
         IntoIter {
             inner: self.inner.into_iter(),
@@ -275,6 +286,7 @@ impl<'a, A: ?Sized + UncheckedAnyExt> Entry<'a, A> {
     ///
     /// It is the caller’s responsibility to ensure that the key of the entry corresponds with
     /// the type ID of `value`. If they do not, memory safety may be violated.
+    #[inline]
     pub unsafe fn or_insert(self, default: Box<A>) -> &'a mut A {
         match self {
             Entry::Occupied(inner) => inner.into_mut(),
@@ -287,6 +299,7 @@ impl<'a, A: ?Sized + UncheckedAnyExt> Entry<'a, A> {
     ///
     /// It is the caller’s responsibility to ensure that the key of the entry corresponds with
     /// the type ID of `value`. If they do not, memory safety may be violated.
+    #[inline]
     pub unsafe fn or_insert_with<F: FnOnce() -> Box<A>>(self, default: F) -> &'a mut A {
         match self {
             Entry::Occupied(inner) => inner.into_mut(),
@@ -297,17 +310,20 @@ impl<'a, A: ?Sized + UncheckedAnyExt> Entry<'a, A> {
 
 impl<'a, A: ?Sized + UncheckedAnyExt> OccupiedEntry<'a, A> {
     /// Gets a reference to the value in the entry.
+    #[inline]
     pub fn get(&self) -> &A {
         &**self.inner.get() 
     }
 
     /// Gets a mutable reference to the value in the entry.
+    #[inline]
     pub fn get_mut(&mut self) -> &mut A {
         &mut **self.inner.get_mut()
     }
 
     /// Converts the OccupiedEntry into a mutable reference to the value in the entry
     /// with a lifetime bound to the collection itself.
+    #[inline]
     pub fn into_mut(self) -> &'a mut A {
         &mut **self.inner.into_mut()
     }
@@ -316,11 +332,13 @@ impl<'a, A: ?Sized + UncheckedAnyExt> OccupiedEntry<'a, A> {
     ///
     /// It is the caller’s responsibility to ensure that the key of the entry corresponds with
     /// the type ID of `value`. If they do not, memory safety may be violated.
+    #[inline]
     pub unsafe fn insert(&mut self, value: Box<A>) -> Box<A> {
         self.inner.insert(value)
     }
 
     /// Takes the value out of the entry, and returns it.
+    #[inline]
     pub fn remove(self) -> Box<A> {
         self.inner.remove()
     }
@@ -332,6 +350,7 @@ impl<'a, A: ?Sized + UncheckedAnyExt> VacantEntry<'a, A> {
     ///
     /// It is the caller’s responsibility to ensure that the key of the entry corresponds with
     /// the type ID of `value`. If they do not, memory safety may be violated.
+    #[inline]
     pub unsafe fn insert(self, value: Box<A>) -> &'a mut A {
         &mut **self.inner.insert(value)
     }
