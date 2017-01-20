@@ -1,6 +1,6 @@
 [package]
 name = "anymap"
-version = "0.12.0"
+version = "0.12.1"
 authors = ["Chris Morgan <me@chrismorgan.info>"]
 description = "A safe and convenient store for one value of each type"
 #documentation = "http://www.rust-ci.org/chris-morgan/anymap/doc/anymap/index.html"
