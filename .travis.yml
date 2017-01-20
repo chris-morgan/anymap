@@ -4,5 +4,6 @@ rust:
   - beta
   - stable
 script:
-  - if [[ "$(rustc --version)" =~ -(dev|nightly) ]]; then cargo test --features bench; else ! cargo test --features bench; fi
+  - if [[ "$(rustc --version)" =~ -(dev|nightly) ]]; then cargo bench; fi
   - cargo test
+  - cargo test --release
