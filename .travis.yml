@@ -3,15 +3,6 @@ rust:
   - nightly
   - beta
   - stable
-env:
-  global:
-    - secure: nR+DJRUQ9v03nNZMpMu1tGKLKBAqdQsTIAr8ffdl+DUEh3b2jvQ+vLLNFLPjsloqhoOXo7cWO7qVpiE4ZOq2lNDURQjdiZGFjh/Y5+xKy2BqFdV7qQ1JoBzsMyx28tQTYz0mtBsACiCYKKb+ddNX5hpwrsjp8cS7htZktA5kbiU=
 script:
   - if [[ "$(rustc --version)" =~ -(dev|nightly) ]]; then cargo test --features bench; else ! cargo test --features bench; fi
   - cargo test
-  - cargo doc
-after_script:
-  - ln -s target/doc doc
-  - curl -v http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN > ./upload-docs
-  - cat ./upload-docs
-  - sh ./upload-docs
