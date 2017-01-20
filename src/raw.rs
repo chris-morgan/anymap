@@ -7,6 +7,7 @@ use std::borrow::Borrow;
 use std::collections::hash_map::{self, HashMap};
 use std::hash::Hash;
 use std::hash::{Hasher, BuildHasherDefault};
+#[cfg(test)]
 use std::mem;
 use std::ops::{Index, IndexMut};
 use std::ptr;
@@ -24,7 +25,7 @@ impl Hasher for TypeIdHasher {
         // This expects to receive one and exactly one 64-bit value
         debug_assert!(bytes.len() == 8);
         unsafe {
-            ptr::copy_nonoverlapping(mem::transmute(&bytes[0]), &mut self.value, 1)
+            ptr::copy_nonoverlapping(&bytes[0] as *const u8 as *const u64, &mut self.value, 1)
         }
     }
 
