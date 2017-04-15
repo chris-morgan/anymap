@@ -185,6 +185,12 @@ impl<A: ?Sized + UncheckedAnyExt> Map<A> {
         self.raw.contains_key(&TypeId::of::<T>())
     }
 
+    /// Returns true if the collection contains a value of type `T`.
+    #[inline]
+    pub fn contains_key(&self, id: &TypeId) -> bool {
+        self.raw.contains_key(id)
+    }
+
     /// Gets the entry for the given type in the collection for in-place manipulation
     #[inline]
     pub fn entry<T: IntoBox<A>>(&mut self) -> Entry<A, T> {
