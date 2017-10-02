@@ -131,6 +131,13 @@ impl<A: ?Sized + UncheckedAnyExt> Clone for Map<A> where Box<A>: Clone {
     }
 }
 
+impl<A: ?Sized + UncheckedAnyExt> Default for Map<A> {
+    #[inline]
+    fn default() -> Map<A> {
+        Map::new()
+    }
+}
+
 /// The most common type of `Map`: just using `Any`.
 ///
 /// Why is this a separate type alias rather than a default value for `Map<A>`? `Map::new()`
@@ -474,6 +481,12 @@ mod tests {
 
     test_entry!(test_entry_any, AnyMap);
     test_entry!(test_entry_cloneany, Map<CloneAny>);
+
+    #[test]
+    fn test_default() {
+        let map: AnyMap = Default::default();
+        assert_eq!(map.len(), 0);
+    }
 
     #[test]
     fn test_clone() {
