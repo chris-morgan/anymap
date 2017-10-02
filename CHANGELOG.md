@@ -5,6 +5,8 @@
   don’t signify). Technically a [breaking-change], but it was something for
   development only, so I’m not in the slightest bit concerned by it.
 
+- Implement `Default` on `Map` (not just on `RawMap`)
+
 I don’t plan for there to be any real changes from 0.12.1;
 it should be just a bit of housecleaning and a version bump.
 

@@ -75,6 +75,13 @@ macro_rules! impl_common_methods {
                 self.$field.clear()
             }
         }
+
+        impl<A: ?Sized + UncheckedAnyExt> Default for $t<A> {
+            #[inline]
+            fn default() -> $t<A> {
+                $t::new()
+            }
+        }
     }
 }
 
@@ -388,6 +395,12 @@ mod tests {
 
     test_entry!(test_entry_any, AnyMap);
     test_entry!(test_entry_cloneany, Map<CloneAny>);
+
+    #[test]
+    fn test_default() {
+        let map: AnyMap = Default::default();
+        assert_eq!(map.len(), 0);
+    }
 
     #[test]
     fn test_clone() {
