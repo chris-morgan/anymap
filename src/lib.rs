@@ -79,6 +79,14 @@ macro_rules! impl_common_methods {
                 self.$field.clear()
             }
         }
+
+        impl<A: ?Sized + UncheckedAnyExt> Default for $t<A> {
+            /// Create a default (empty) collection
+            #[inline]
+            fn default() -> $t<A> {
+                $t::new()
+            }
+        }
     }
 }
 
@@ -128,13 +136,6 @@ impl<A: ?Sized + UncheckedAnyExt> Clone for Map<A> where Box<A>: Clone {
         Map {
             raw: self.raw.clone(),
         }
-    }
-}
-
-impl<A: ?Sized + UncheckedAnyExt> Default for Map<A> {
-    #[inline]
-    fn default() -> Map<A> {
-        Map::new()
     }
 }
 

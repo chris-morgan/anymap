@@ -70,13 +70,6 @@ impl<A: ?Sized + UncheckedAnyExt> Clone for RawMap<A> where Box<A>: Clone {
     }
 }
 
-impl<A: ?Sized + UncheckedAnyExt> Default for RawMap<A> {
-    #[inline]
-    fn default() -> RawMap<A> {
-        RawMap::new()
-    }
-}
-
 impl_common_methods! {
     field: RawMap.inner;
     new() => HashMap::with_hasher(Default::default());
