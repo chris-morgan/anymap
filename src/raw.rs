@@ -10,7 +10,6 @@ use std::hash::{Hasher, BuildHasherDefault};
 #[cfg(test)]
 use std::mem;
 use std::ops::{Index, IndexMut};
-use std::ptr;
 
 use any::{Any, UncheckedAnyExt};
 
@@ -23,10 +22,11 @@ impl Hasher for TypeIdHasher {
     #[inline]
     fn write(&mut self, bytes: &[u8]) {
         // This expects to receive one and exactly one 64-bit value
-        debug_assert!(bytes.len() == 8);
-        unsafe {
-            ptr::copy_nonoverlapping(&bytes[0] as *const u8 as *const u64, &mut self.value, 1)
-        }
+        assert!(bytes.len() == 8);
+        self.value = u64::from(bytes[0])       | u64::from(bytes[1]) << 8  |
+                     u64::from(bytes[2]) << 16 | u64::from(bytes[3]) << 24 |
+                     u64::from(bytes[4]) << 32 | u64::from(bytes[5]) << 40 |
+                     u64::from(bytes[6]) << 48 | u64::from(bytes[7]) << 56;
     }
 
     #[inline]
