@@ -267,6 +267,31 @@ impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A>> Entry<'a, A, V> {
     }
 }
 
+impl<'a, A: ?Sized + UncheckedAnyExt, V: Default + IntoBox<A>> Entry<'a, A, V> {
+    /// Ensures a value is in the entry by inserting the default value if empty,
+    /// and returns a mutable reference to the value in the entry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use anymap::AnyMap;
+    /// let mut data = AnyMap::new();
+    /// {
+    ///     let r = data.entry::<i32>().or_default();
+    ///     assert_eq!(r, &mut 0);
+    ///     *r = 1;
+    /// }
+    /// assert_eq!(data.get(), Some(&1));
+    /// assert_eq!(data.entry::<i32>().or_default(), &mut 1);
+    /// ```
+    pub fn or_default(self) -> &'a mut V {
+        match self {
+            Entry::Occupied(entry) => entry.into_mut(),
+            Entry::Vacant(entry) => entry.insert(Default::default()),
+        }
+    }
+}
+
 impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A>> OccupiedEntry<'a, A, V> {
     /// Gets a reference to the value in the entry
     #[inline]
