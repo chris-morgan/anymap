@@ -9,3 +9,6 @@ repository = "https://github.com/chris-morgan/anymap"
 readme = "README.md"
 keywords = ["container", "data-structure", "map"]
 license = "MIT/Apache-2.0"
+
+[dependencies]
+hashbrown = "0.6.3"
