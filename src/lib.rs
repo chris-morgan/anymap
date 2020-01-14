@@ -1,9 +1,13 @@
 //! This crate provides the `AnyMap` type, a safe and convenient store for one value of each type.
-
+#![no_std]
 #![warn(missing_docs, unused_results)]
 
-use std::any::TypeId;
-use std::marker::PhantomData;
+extern crate alloc;
+extern crate hashbrown;
+
+use alloc::{boxed::Box, vec::Vec};
+use core::any::TypeId;
+use core::marker::PhantomData;
 
 use raw::RawMap;
 use any::{UncheckedAnyExt, IntoBox, Any};
@@ -427,7 +431,7 @@ mod tests {
         fn assert_send<T: Send>() { }
         fn assert_sync<T: Sync>() { }
         fn assert_clone<T: Clone>() { }
-        fn assert_debug<T: ::std::fmt::Debug>() { }
+        fn assert_debug<T: ::core::fmt::Debug>() { }
         assert_send::<Map<Any + Send>>();
         assert_send::<Map<Any + Send + Sync>>();
         assert_sync::<Map<Any + Sync>>();
