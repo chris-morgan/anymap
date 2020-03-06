@@ -1,6 +1,7 @@
 [package]
 name = "anymap"
 version = "0.12.1"
+edition = "2018"
 authors = ["Chris Morgan <me@chrismorgan.info>"]
 description = "A safe and convenient store for one value of each type"
 documentation = "https://docs.rs/anymap"

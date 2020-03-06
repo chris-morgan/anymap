@@ -1,12 +1,12 @@
 //! This crate provides the `AnyMap` type, a safe and convenient store for one value of each type.
 
 #![warn(missing_docs, unused_results)]
-
+#![deny(warnings)]
 use std::any::TypeId;
 use std::marker::PhantomData;
 
-use raw::RawMap;
-use any::{UncheckedAnyExt, IntoBox, Any};
+use crate::raw::RawMap;
+use crate::any::{UncheckedAnyExt, IntoBox, Any};
 
 macro_rules! impl_common_methods {
     (
@@ -120,7 +120,7 @@ pub mod raw;
 ///
 /// Values containing non-static references are not permitted.
 #[derive(Debug)]
-pub struct Map<A: ?Sized + UncheckedAnyExt = Any> {
+pub struct Map<A: ?Sized + UncheckedAnyExt = dyn Any> {
     raw: RawMap<A>,
 }
 
@@ -139,7 +139,7 @@ impl<A: ?Sized + UncheckedAnyExt> Clone for Map<A> where Box<A>: Clone {
 /// Why is this a separate type alias rather than a default value for `Map<A>`? `Map::new()`
 /// doesn’t seem to be happy to infer that it should go with the default value.
 /// It’s a bit sad, really. Ah well, I guess this approach will do.
-pub type AnyMap = Map<Any>;
+pub type AnyMap = Map<dyn Any>;
 
 impl_common_methods! {
     field: Map.raw;
