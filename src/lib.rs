@@ -142,7 +142,7 @@ impl<A: ?Sized + UncheckedAnyExt> Clone for Map<A> where Box<A>: Clone {
 pub type AnyMap = Map<dyn Any>;
 
 /// Sync version
-pub type SyncAnyMap = Map<dyn Any + Send + Sync>;
+pub type SendSyncAnyMap = Map<dyn Any + Send + Sync>;
 
 impl_common_methods! {
     field: Map.raw;
