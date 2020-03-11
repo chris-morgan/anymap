@@ -1,7 +1,7 @@
 //! This crate provides the `AnyMap` type, a safe and convenient store for one value of each type.
 
 #![warn(missing_docs, unused_results)]
-#![deny(warnings)]
+//#![deny(warnings)]
 use std::any::TypeId;
 use std::marker::PhantomData;
 
@@ -140,6 +140,9 @@ impl<A: ?Sized + UncheckedAnyExt> Clone for Map<A> where Box<A>: Clone {
 /// doesn’t seem to be happy to infer that it should go with the default value.
 /// It’s a bit sad, really. Ah well, I guess this approach will do.
 pub type AnyMap = Map<dyn Any>;
+
+/// Sync version
+pub type SyncAnyMap = Map<dyn Any + Send + Sync>;
 
 impl_common_methods! {
     field: Map.raw;
