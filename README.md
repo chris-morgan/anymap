@@ -38,14 +38,12 @@ Yeah, the performance costs of going safe are quite small. The more serious matt
 
 But frankly, if you wanted to do all this it’d be easier and faster to write it from scratch. The core of the library is actually really simple and perfectly safe, as can be seen in [`src/lib.rs` in the first commit](https://github.com/chris-morgan/anymap/tree/a294948f57dee47bb284d6a3ae1b8f61a902a03c/src/lib.rs) (note that that code won’t run without a few syntactic alterations; it was from well before Rust 1.0 and has things like `Any:'static` where now we have `Any + 'static`).
 
-Author
-------
+## Colophon
 
-[Chris Morgan](http://chrismorgan.info/) ([chris-morgan](https://github.com/chris-morgan)) is the primary author and maintainer of AnyMap.
+**Authorship:** [Chris Morgan](https://chrismorgan.info/) is the author and maintainer of this library.
 
-License
--------
-
-This library is distributed under similar terms to Rust: dual licensed under the MIT license and the Apache license (version 2.0).
-
-See LICENSE-APACHE, LICENSE-MIT, and COPYRIGHT for details.
+**Licensing:** this library is distributed under the terms of the
+[Blue Oak Model License 1.0.0](https://blueoakcouncil.org/license/1.0.0), the
+[MIT License](https://opensource.org/licenses/MIT) and the
+[Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0), at your choice.
+See [COPYING](COPYING) for details.

@@ -8,4 +8,4 @@ documentation = "https://docs.rs/anymap"
 repository = "https://github.com/chris-morgan/anymap"
 readme = "README.md"
 keywords = ["container", "data-structure", "map"]
-license = "MIT/Apache-2.0"
+license = "BlueOak-1.0.0 OR MIT OR Apache-2.0"
