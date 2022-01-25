@@ -1,4 +1,6 @@
-//! This crate provides the `AnyMap` type, a safe and convenient store for one value of each type.
+//! This crate provides a safe and convenient store for one value of each type.
+//!
+//! Your starting point is [`Map`]. It has an example.
 
 #![warn(missing_docs, unused_results)]
 
@@ -95,12 +97,27 @@ pub mod raw;
 /// The type parameter `A` allows you to use a different value type; normally you will want it to
 /// be `std::any::Any`, but there are other choices:
 ///
-/// - If you want the entire map to be cloneable, use `CloneAny` instead of `Any`.
-/// - You can add on `+ Send` or `+ Send + Sync` (e.g. `Map<dyn Any + Send>`) to add those bounds.
+/// - If you want the entire map to be cloneable, use `CloneAny` instead of `Any`; with that, you
+///   can only add types that implement `Clone` to the map.
+/// - You can add on `+ Send` or `+ Send + Sync` (e.g. `Map<dyn Any + Send>`) to add those auto
+///   traits.
+///
+/// Cumulatively, there are thus six forms of map:
+///
+/// - <code>[Map]&lt;dyn [std::any::Any]&gt;</code>, also spelled [`AnyMap`] for convenience.
+/// - <code>[Map]&lt;dyn [std::any::Any] + Send&gt;</code>
+/// - <code>[Map]&lt;dyn [std::any::Any] + Send + Sync&gt;</code>
+/// - <code>[Map]&lt;dyn [CloneAny]&gt;</code>
+/// - <code>[Map]&lt;dyn [CloneAny] + Send&gt;</code>
+/// - <code>[Map]&lt;dyn [CloneAny] + Send + Sync&gt;</code>
+///
+/// ## Example
+///
+/// (Here using the [`AnyMap`] convenience alias; the first line could use
+/// <code>[anymap::Map][Map]::&lt;[std::any::Any]&gt;::new()</code> instead if desired.)
 ///
 /// ```rust
-/// # use anymap::AnyMap;
-/// let mut data = AnyMap::new();
+/// let mut data = anymap::AnyMap::new();
 /// assert_eq!(data.get(), None::<&i32>);
 /// data.insert(42i32);
 /// assert_eq!(data.get(), Some(&42i32));
@@ -135,7 +152,7 @@ impl<A: ?Sized + UncheckedAnyExt> Clone for Map<A> where Box<A>: Clone {
     }
 }
 
-/// The most common type of `Map`: just using `Any`.
+/// The most common type of `Map`: just using `Any`; <code>[Map]&lt;dyn [Any]&gt;</code>.
 ///
 /// Why is this a separate type alias rather than a default value for `Map<A>`? `Map::new()`
 /// doesn’t seem to be happy to infer that it should go with the default value.

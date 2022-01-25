@@ -14,7 +14,7 @@ What this means is that in an ``AnyMap`` you may store zero or one values for ev
 
 This library uses a fair bit of unsafe code for several reasons:
 
-- To support Any and CloneAny, unsafe code is required (because of how the `downcast` methods are defined in `impl dyn Any` rather than being trait methods; I think this is kind of a historical detail of the structure of `std::any::Any`); if you wanted to ditch `Clone` support this unsafety could be removed.
+- To support `CloneAny`, unsafe code is required (because the downcast methods are defined on `dyn Any` rather than being trait methods); if you wanted to ditch `Clone` support this unsafety could be removed.
 
 - In the interests of performance, skipping various checks that are unnecessary because of the invariants of the data structure (no need to check the type ID when it’s been statically ensured by being used as the hash map key).
 
@@ -22,7 +22,7 @@ This library uses a fair bit of unsafe code for several reasons:
 
 It’s not possible to remove all unsafety from this library without also removing some of the functionality. Still, at the cost of the `CloneAny` functionality and the raw interface, you can definitely remove all unsafe code. Here’s how you could do it:
 
-- Remove the genericness of it all;
+- Remove the genericness of it all (choose `dyn Any`, `dyn Any + Send` or `dyn Any + Send + Sync` and stick with it);
 - Merge `anymap::raw` into the normal interface, flattening it;
 - Change things like `.map(|any| unsafe { any.downcast_unchecked() })` to `.and_then(|any| any.downcast())` (performance cost: one extra superfluous type ID comparison, indirect).
 
