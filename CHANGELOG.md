@@ -14,12 +14,12 @@
 
 - Increased the minimum supported version of Rust from 1.7.0 to 1.34.0.
 
-- Remove `bench` Cargo feature (by shifting benchmarks out of `src/lib.rs` into
-  `benches/bench.rs`; it still won’t run on anything but nightly, but that
-  don’t signify). Technically a [breaking-change], but it was something for
-  development only, so I’m not in the slightest bit concerned by it.
+- Removed the `bench` Cargo feature which was mostly to work around historical
+  Cargo limitations, but was solved by moving benchmarks from `src/lib.rs` to
+  `benches/bench.rs` even before those limitations were lifted. The benchmarks
+  still won’t run on anything but nightly, but that don’t signify.
 
-- Implement `Default` on `Map` (not just on `RawMap`)
+- Implemented `Default` on `Map` (not just on `RawMap`).
 
 - The implementation of `Into<RawMap<A>>` for `Map<A>` has been
   replaced with the more general `From<Map<A>>` for `RawMap<A>`.
