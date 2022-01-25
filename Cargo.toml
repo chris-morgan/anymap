@@ -8,3 +8,4 @@ repository = "https://github.com/chris-morgan/anymap"
 keywords = ["container", "any", "map"]
 categories = ["rust-patterns", "data-structures"]
 license = "BlueOak-1.0.0 OR MIT OR Apache-2.0"
+exclude = ["test", "benches", ".travis.yml", ".gitignore"]
