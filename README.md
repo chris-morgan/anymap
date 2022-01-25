@@ -10,6 +10,26 @@ The ``AnyMap`` type is a friendly wrapper around a ``HashMap<TypeId, Box<dyn Any
 
 What this means is that in an ``AnyMap`` you may store zero or one values for every type.
 
+## Cargo features/dependencies/usage
+
+Typical Cargo.toml usage:
+
+```toml
+[dependencies]
+anymap = "1.0.0-beta.1"
+```
+
+No-std usage, using `alloc` and the [hashbrown](https://rust-lang.github.io/hashbrown) crate instead of `std::collections::HashMap`:
+
+```toml
+[dependencies]
+anymap = { version = "1.0.0-beta.1", default-features = false, features = ["hashbrown"] }
+```
+
+The `std` feature is enabled by default. The `hashbrown` feature overrides it. At least one of the two must be enabled.
+
+**On stability:** hashbrown is still pre-1.0.0 and experiencing breaking changes. Because it’s useful for a small fraction of users, I am retaining it, but with *different compatibility guarantees to the typical SemVer ones*. Where possible, I will just widen the range for new releases of hashbrown (e.g. change `0.12` to `>=0.12, <0.14` when they release 0.13.0), but if an incompatible change occurs, I may drop support for older versions of hashbrown with a bump to the *minor* part of the anymap version number (e.g. 1.1.0, 1.2.0). Iff you’re using this feature, this is cause to *consider* using a tilde requirement like `"~1.0"` (or spell it out as `>=1, <1.1`).
+
 ## Unsafe code in this library
 
 This library uses a fair bit of unsafe code for several reasons:

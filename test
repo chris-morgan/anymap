@@ -2,9 +2,25 @@
 set -e
 export RUSTFLAGS="-D warnings"
 export RUSTDOCFLAGS="-D warnings"
-cargo +1.34.0 test
-cargo +1.34.0 test --release
+run_tests() {
+	for release in "" "--release"; do
+		cargo $1 test $release --no-default-features --features hashbrown
+		cargo $1 test $release --features hashbrown
+		# (2>/dev/null because otherwise you’ll keep seeing errors and double-guessing whether they were supposed to happen or whether the script failed to exit nonzero.)
+		! 2>/dev/null cargo $1 test $release --no-default-features || ! echo "'cargo $1 test $release --no-default-features' failed to fail (sorry, its stderr is suppressed, try it manually)"
+		cargo $1 test $release
+	done
+}
+
+# We’d like to test with the oldest declared-supported version of *all* our dependencies.
+# That means Rust 1.36.0 + hashbrown 0.1.1.
+# Hence the different lock file.
+# (Also Rust 1.36.0 can’t read the latest lock file format.)
+cp test-oldest-Cargo.lock Cargo.lock
+run_tests +1.36.0
+rm Cargo.lock
+run_tests
+
 cargo clippy
-cargo test
-cargo test --release
+cargo bench
 cargo doc

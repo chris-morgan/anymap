@@ -1,5 +1,7 @@
 use core::fmt;
 use core::any::Any;
+#[cfg(not(feature = "std"))]
+use alloc::boxed::Box;
 
 #[doc(hidden)]
 pub trait CloneToAny {

@@ -4,8 +4,19 @@
 
 #![warn(missing_docs, unused_results)]
 
+#![cfg_attr(not(feature = "std"), no_std)]
+
 use core::any::{Any, TypeId};
 use core::marker::PhantomData;
+
+#[cfg(not(any(feature = "std", feature = "hashbrown")))]
+compile_error!("anymap: you must enable the 'std' feature or the 'hashbrown' feature");
+
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+
+#[cfg(not(feature = "std"))]
+use alloc::boxed::Box;
 
 use raw::RawMap;
 use any::{UncheckedAnyExt, IntoBox};

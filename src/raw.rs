@@ -4,7 +4,12 @@
 
 use core::any::{Any, TypeId};
 use core::borrow::Borrow;
+#[cfg(all(feature = "std", not(feature = "hashbrown")))]
 use std::collections::hash_map::{self, HashMap};
+#[cfg(feature = "hashbrown")]
+use hashbrown::hash_map::{self, HashMap};
+#[cfg(not(feature = "std"))]
+use alloc::boxed::Box;
 use core::convert::TryInto;
 use core::hash::Hash;
 use core::hash::{Hasher, BuildHasherDefault};
@@ -35,6 +40,8 @@ impl Hasher for TypeIdHasher {
 
 #[test]
 fn type_id_hasher() {
+    #[cfg(not(feature = "std"))]
+    use alloc::vec::Vec;
     fn verify_hashing_with(type_id: TypeId) {
         let mut hasher = TypeIdHasher::default();
         type_id.hash(&mut hasher);
@@ -260,12 +267,18 @@ impl<A: ?Sized + UncheckedAnyExt> IntoIterator for RawMap<A> {
 
 /// A view into a single occupied location in a `RawMap`.
 pub struct OccupiedEntry<'a, A: ?Sized + UncheckedAnyExt> {
+    #[cfg(all(feature = "std", not(feature = "hashbrown")))]
     inner: hash_map::OccupiedEntry<'a, TypeId, Box<A>>,
+    #[cfg(feature = "hashbrown")]
+    inner: hash_map::OccupiedEntry<'a, TypeId, Box<A>, BuildHasherDefault<TypeIdHasher>>,
 }
 
 /// A view into a single empty location in a `RawMap`.
 pub struct VacantEntry<'a, A: ?Sized + UncheckedAnyExt> {
+    #[cfg(all(feature = "std", not(feature = "hashbrown")))]
     inner: hash_map::VacantEntry<'a, TypeId, Box<A>>,
+    #[cfg(feature = "hashbrown")]
+    inner: hash_map::VacantEntry<'a, TypeId, Box<A>, BuildHasherDefault<TypeIdHasher>>,
 }
 
 /// A view into a single location in a `RawMap`, which may be vacant or occupied.
