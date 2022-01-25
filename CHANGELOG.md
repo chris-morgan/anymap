@@ -9,6 +9,9 @@
 
 - Implement `Default` on `Map` (not just on `RawMap`)
 
+- Worked around the spurious `where_clauses_object_safety` future-compatibility lint that has been raised since mid-2018.
+  If you put `#![allow(where_clauses_object_safety)]` on your binary crates for this reason, you can remove it.
+
 I don’t plan for there to be any real changes from 0.12.1;
 it should be just a bit of housecleaning and a version bump.
 

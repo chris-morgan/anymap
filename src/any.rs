@@ -10,15 +10,6 @@ use std::any::Any as StdAny;
 pub trait CloneToAny {
     /// Clone `self` into a new `Box<dyn CloneAny>` object.
     fn clone_to_any(&self) -> Box<dyn CloneAny>;
-
-    /// Clone `self` into a new `Box<dyn CloneAny + Send>` object.
-    fn clone_to_any_send(&self) -> Box<dyn CloneAny + Send> where Self: Send;
-
-    /// Clone `self` into a new `Box<dyn CloneAny + Sync>` object.
-    fn clone_to_any_sync(&self) -> Box<dyn CloneAny + Sync> where Self: Sync;
-
-    /// Clone `self` into a new `Box<dyn CloneAny + Send + Sync>` object.
-    fn clone_to_any_send_sync(&self) -> Box<dyn CloneAny + Send + Sync> where Self: Send + Sync;
 }
 
 impl<T: Any + Clone> CloneToAny for T {
@@ -26,29 +17,27 @@ impl<T: Any + Clone> CloneToAny for T {
     fn clone_to_any(&self) -> Box<dyn CloneAny> {
         Box::new(self.clone())
     }
-
-    #[inline]
-    fn clone_to_any_send(&self) -> Box<dyn CloneAny + Send> where Self: Send {
-        Box::new(self.clone())
-    }
-
-    #[inline]
-    fn clone_to_any_sync(&self) -> Box<dyn CloneAny + Sync> where Self: Sync {
-        Box::new(self.clone())
-    }
-
-    #[inline]
-    fn clone_to_any_send_sync(&self) -> Box<dyn CloneAny + Send + Sync> where Self: Send + Sync {
-        Box::new(self.clone())
-    }
 }
 
 macro_rules! impl_clone {
-    ($t:ty, $method:ident) => {
+    ($t:ty) => {
         impl Clone for Box<$t> {
             #[inline]
             fn clone(&self) -> Box<$t> {
-                (**self).$method()
+                // SAFETY: this dance is to reapply any Send/Sync marker. I’m not happy about this
+                // approach, given that I used to do it in safe code, but then came a dodgy
+                // future-compatibility warning where_clauses_object_safety, which is spurious for
+                // auto traits but still super annoying (future-compatibility lints seem to mean
+                // your bin crate needs a corresponding allow!). Although I explained my plight¹
+                // and it was all explained and agreed upon, no action has been taken. So I finally
+                // caved and worked around it by doing it this way, which matches what’s done for
+                // std::any², so it’s probably not *too* bad.
+                //
+                // ¹ https://github.com/rust-lang/rust/issues/51443#issuecomment-421988013
+                // ² https://github.com/rust-lang/rust/blob/e7825f2b690c9a0d21b6f6d84c404bb53b151b38/library/alloc/src/boxed.rs#L1613-L1616
+                let clone: Box<dyn CloneAny> = (**self).clone_to_any();
+                let raw: *mut dyn CloneAny = Box::into_raw(clone);
+                unsafe { Box::from_raw(raw as *mut $t) }
             }
         }
     }
@@ -144,7 +133,7 @@ implement!(CloneAny,);
 implement!(CloneAny, + Send);
 implement!(CloneAny, + Sync);
 implement!(CloneAny, + Send + Sync);
-impl_clone!(dyn CloneAny, clone_to_any);
-impl_clone!(dyn CloneAny + Send, clone_to_any_send);
-impl_clone!(dyn CloneAny + Sync, clone_to_any_sync);
-impl_clone!(dyn CloneAny + Send + Sync, clone_to_any_send_sync);
+impl_clone!(dyn CloneAny);
+impl_clone!(dyn CloneAny + Send);
+impl_clone!(dyn CloneAny + Sync);
+impl_clone!(dyn CloneAny + Send + Sync);

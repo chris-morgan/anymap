@@ -18,6 +18,8 @@ This library uses a fair bit of unsafe code for several reasons:
 
 - In the interests of performance, skipping various checks that are unnecessary because of the invariants of the data structure (no need to check the type ID when it’s been statically ensured by being used as the hash map key) and simplifying hashing (type IDs are already good hashes, no need to mangle them through SipHash).
 
+- In the `Clone` implementation of `dyn CloneAny` with `Send` and/or `Sync` auto traits added, an unsafe block is used where safe code used to be used in order to avoid a [spurious future-compatibility lint](https://github.com/rust-lang/rust/issues/51443#issuecomment-421988013).
+
 It’s not possible to remove all unsafety from this library without also removing some of the functionality. Still, at the cost of the `CloneAny` functionality, the raw interface and maybe the concurrency support, you can definitely remove all unsafe code. Here’s how you could do it:
 
 - Remove the genericness of it all;
