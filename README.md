@@ -1,14 +1,43 @@
 # ``AnyMap``, a safe and convenient store for one value of each type
 
+``AnyMap`` is a type-safe wrapper around ``HashMap<TypeId, Box<dyn Any>>`` that lets you not worry about ``TypeId`` or downcasting, but just get on with storing one each of a bag of diverse types, which is really useful for extensibility in some sorts of libraries.
+
+## Background
+
 If you’re familiar with Go and Go web frameworks, you may have come across the common “environment” pattern for storing data related to the request. It’s typically something like ``map[string]interface{}`` and is accessed with arbitrary strings which may clash and type assertions which are a little unwieldy and must be used very carefully. (Personally I would consider that it is just *asking* for things to blow up in your face.) In a language like Go, lacking in generics, this is the best that can be done; such a thing cannot possibly be made safe without generics.
 
-As another example of such an interface, JavaScript objects are exactly the same—a mapping of string keys to arbitrary values. (There it is actually *more* dangerous, because methods and fields/attributes/properties are on the same plane.)
+As another example of such an interface, JavaScript objects are exactly the same—a mapping of string keys to arbitrary values. (There it is actually *more* dangerous, because methods and fields/attributes/properties are on the same plane—though it’s *possible* to use `Map` these days.)
 
 Fortunately, we can do better than these things in Rust. Our type system is quite equal to easy, robust expression of such problems.
 
-The ``AnyMap`` type is a friendly wrapper around a ``HashMap<TypeId, Box<dyn Any>>``, exposing a nice, easy typed interface, perfectly safe and absolutely robust.
+## Example
 
-What this means is that in an ``AnyMap`` you may store zero or one values for every type.
+```rust
+let mut data = anymap::AnyMap::new();
+assert_eq!(data.get(), None::<&i32>);
+data.insert(42i32);
+assert_eq!(data.get(), Some(&42i32));
+data.remove::<i32>();
+assert_eq!(data.get::<i32>(), None);
+
+#[derive(Clone, PartialEq, Debug)]
+struct Foo {
+    str: String,
+}
+
+assert_eq!(data.get::<Foo>(), None);
+data.insert(Foo { str: format!("foo") });
+assert_eq!(data.get(), Some(&Foo { str: format!("foo") }));
+data.get_mut::<Foo>().map(|foo| foo.str.push('t'));
+assert_eq!(&*data.get::<Foo>().unwrap().str, "foot");
+```
+
+## Features
+
+- Store up to one value for each type in a bag.
+- Add `Send` or `Send + Sync` bounds.
+- You can opt into making the map `Clone`. (In theory you could add all kinds of other functionality, but you can’t readily make this work *generically*, and the bones of it are simple enough that it becomes better to make your own extension of `Any` and reimplement `AnyMap`.)
+- no_std if you like.
 
 ## Cargo features/dependencies/usage
 
