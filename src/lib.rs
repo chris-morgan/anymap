@@ -7,6 +7,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use core::any::{Any, TypeId};
+use core::convert::TryInto;
+use core::hash::{Hasher, BuildHasherDefault};
 use core::marker::PhantomData;
 
 #[cfg(not(any(feature = "std", feature = "hashbrown")))]
@@ -18,9 +20,33 @@ extern crate alloc;
 #[cfg(not(feature = "std"))]
 use alloc::boxed::Box;
 
-use raw::RawMap;
 use any::{UncheckedAnyExt, IntoBox};
 pub use any::CloneAny;
+
+#[cfg(all(feature = "std", not(feature = "hashbrown")))]
+/// A re-export of [`std::collections::hash_map`] for raw access.
+///
+/// If the `hashbrown` feature gets enabled, this will become an export of `hashbrown::hash_map`.
+///
+/// As with [`RawMap`][crate::RawMap], this is exposed for compatibility reasons, since features
+/// are supposed to be additive. This *is* imperfect, since the two modules are incompatible in a
+/// few places (e.g. hashbrown’s entry types have an extra generic parameter), but it’s close, and
+/// much too useful to give up the whole concept.
+pub use std::collections::hash_map as raw_hash_map;
+
+#[cfg(feature = "hashbrown")]
+/// A re-export of [`hashbrown::hash_map`] for raw access.
+///
+/// If the `hashbrown` feature was disabled, this would become an export of
+/// `std::collections::hash_map`.
+///
+/// As with [`RawMap`][crate::RawMap], this is exposed for compatibility reasons, since features
+/// are supposed to be additive. This *is* imperfect, since the two modules are incompatible in a
+/// few places (e.g. hashbrown’s entry types have an extra generic parameter), but it’s close, and
+/// much too useful to give up the whole concept.
+pub use hashbrown::hash_map as raw_hash_map;
+
+use self::raw_hash_map::HashMap;
 
 macro_rules! impl_common_methods {
     (
@@ -104,7 +130,17 @@ macro_rules! impl_common_methods {
 }
 
 mod any;
-pub mod raw;
+
+/// Raw access to the underlying `HashMap`.
+///
+/// This is a public type alias because the underlying `HashMap` could be
+/// `std::collections::HashMap` or `hashbrown::HashMap`, depending on the crate features enabled.
+/// For that reason, you should refer to this type as `anymap::RawMap` rather than
+/// `std::collections::HashMap` to avoid breakage if something else in your crate tree enables
+/// hashbrown.
+///
+/// See also [`raw_hash_map`], an export of the corresponding `hash_map` module.
+pub type RawMap<A> = HashMap<TypeId, Box<A>, BuildHasherDefault<TypeIdHasher>>;
 
 /// A collection containing zero or one values for any given type and allowing convenient,
 /// type-safe access to those values.
@@ -176,8 +212,8 @@ pub type AnyMap = Map<dyn Any>;
 
 impl_common_methods! {
     field: Map.raw;
-    new() => RawMap::new();
-    with_capacity(capacity) => RawMap::with_capacity(capacity);
+    new() => RawMap::with_hasher(Default::default());
+    with_capacity(capacity) => RawMap::with_capacity_and_hasher(capacity, Default::default());
 }
 
 impl<A: ?Sized + UncheckedAnyExt> Map<A> {
@@ -227,15 +263,94 @@ impl<A: ?Sized + UncheckedAnyExt> Map<A> {
     #[inline]
     pub fn entry<T: IntoBox<A>>(&mut self) -> Entry<A, T> {
         match self.raw.entry(TypeId::of::<T>()) {
-            raw::Entry::Occupied(e) => Entry::Occupied(OccupiedEntry {
+            raw_hash_map::Entry::Occupied(e) => Entry::Occupied(OccupiedEntry {
                 inner: e,
                 type_: PhantomData,
             }),
-            raw::Entry::Vacant(e) => Entry::Vacant(VacantEntry {
+            raw_hash_map::Entry::Vacant(e) => Entry::Vacant(VacantEntry {
                 inner: e,
                 type_: PhantomData,
             }),
         }
+    }
+
+    /// Get access to the raw hash map that backs this.
+    ///
+    /// This will seldom be useful, but it’s conceivable that you could wish to iterate over all
+    /// the items in the collection, and this lets you do that.
+    ///
+    /// To improve compatibility with Cargo features, interact with this map through the names
+    /// [`anymap::RawMap`][RawMap] and [`anymap::raw_hash_map`][raw_hash_map], rather than through
+    /// `std::collections::{HashMap, hash_map}` or `hashbrown::{HashMap, hash_map}`, for anything
+    /// beyond self methods. Otherwise, if you use std and another crate in the tree enables
+    /// hashbrown, your code will break.
+    #[inline]
+    pub fn as_raw(&self) -> &RawMap<A> {
+        &self.raw
+    }
+
+    /// Get mutable access to the raw hash map that backs this.
+    ///
+    /// This will seldom be useful, but it’s conceivable that you could wish to iterate over all
+    /// the items in the collection mutably, or drain or something, or *possibly* even batch
+    /// insert, and this lets you do that.
+    ///
+    /// To improve compatibility with Cargo features, interact with this map through the names
+    /// [`anymap::RawMap`][RawMap] and [`anymap::raw_hash_map`][raw_hash_map], rather than through
+    /// `std::collections::{HashMap, hash_map}` or `hashbrown::{HashMap, hash_map}`, for anything
+    /// beyond self methods. Otherwise, if you use std and another crate in the tree enables
+    /// hashbrown, your code will break.
+    ///
+    /// # Safety
+    ///
+    /// If you insert any values to the raw map, the key (a `TypeId`) must match the value’s type,
+    /// or *undefined behaviour* will occur when you access those values.
+    ///
+    /// (*Removing* entries is perfectly safe.)
+    #[inline]
+    pub unsafe fn as_raw_mut(&mut self) -> &mut RawMap<A> {
+        &mut self.raw
+    }
+
+    /// Convert this into the raw hash map that backs this.
+    ///
+    /// This will seldom be useful, but it’s conceivable that you could wish to consume all the
+    /// items in the collection and do *something* with some or all of them, and this lets you do
+    /// that, without the `unsafe` that `.as_raw_mut().drain()` would require.
+    ///
+    /// To improve compatibility with Cargo features, interact with this map through the names
+    /// [`anymap::RawMap`][RawMap] and [`anymap::raw_hash_map`][raw_hash_map], rather than through
+    /// `std::collections::{HashMap, hash_map}` or `hashbrown::{HashMap, hash_map}`, for anything
+    /// beyond self methods. Otherwise, if you use std and another crate in the tree enables
+    /// hashbrown, your code will break.
+    #[inline]
+    pub fn into_raw(self) -> RawMap<A> {
+        self.raw
+    }
+
+    /// Construct a map from a collection of raw values.
+    ///
+    /// You know what? I can’t immediately think of any legitimate use for this, especially because
+    /// of the requirement of the `BuildHasherDefault<TypeIdHasher>` generic in the map.
+    ///
+    /// Perhaps this will be most practical as `unsafe { Map::from_raw(iter.collect()) }`, iter
+    /// being an iterator over `(TypeId, Box<A>)` pairs. Eh, this method provides symmetry with
+    /// `into_raw`, so I don’t care if literally no one ever uses it. I’m not even going to write a
+    /// test for it, it’s so trivial.
+    ///
+    /// To improve compatibility with Cargo features, interact with this map through the names
+    /// [`anymap::RawMap`][RawMap] and [`anymap::raw_hash_map`][raw_hash_map], rather than through
+    /// `std::collections::{HashMap, hash_map}` or `hashbrown::{HashMap, hash_map}`, for anything
+    /// beyond self methods. Otherwise, if you use std and another crate in the tree enables
+    /// hashbrown, your code will break.
+    ///
+    /// # Safety
+    ///
+    /// For all entries in the raw map, the key (a `TypeId`) must match the value’s type,
+    /// or *undefined behaviour* will occur when you access that entry.
+    #[inline]
+    pub unsafe fn from_raw(raw: RawMap<A>) -> Map<A> {
+        Self { raw }
     }
 }
 
@@ -243,41 +358,26 @@ impl<A: ?Sized + UncheckedAnyExt> Extend<Box<A>> for Map<A> {
     #[inline]
     fn extend<T: IntoIterator<Item = Box<A>>>(&mut self, iter: T) {
         for item in iter {
-            let _ = unsafe { self.raw.insert(item.type_id(), item) };
+            let _ = self.raw.insert(item.type_id(), item);
         }
-    }
-}
-
-impl<A: ?Sized + UncheckedAnyExt> AsRef<RawMap<A>> for Map<A> {
-    #[inline]
-    fn as_ref(&self) -> &RawMap<A> {
-        &self.raw
-    }
-}
-
-impl<A: ?Sized + UncheckedAnyExt> AsMut<RawMap<A>> for Map<A> {
-    #[inline]
-    fn as_mut(&mut self) -> &mut RawMap<A> {
-        &mut self.raw
-    }
-}
-
-impl<A: ?Sized + UncheckedAnyExt> From<Map<A>> for RawMap<A> {
-    #[inline]
-    fn from(map: Map<A>) -> RawMap<A> {
-        map.raw
     }
 }
 
 /// A view into a single occupied location in an `Map`.
 pub struct OccupiedEntry<'a, A: ?Sized + UncheckedAnyExt, V: 'a> {
-    inner: raw::OccupiedEntry<'a, A>,
+    #[cfg(all(feature = "std", not(feature = "hashbrown")))]
+    inner: raw_hash_map::OccupiedEntry<'a, TypeId, Box<A>>,
+    #[cfg(feature = "hashbrown")]
+    inner: raw_hash_map::OccupiedEntry<'a, TypeId, Box<A>, BuildHasherDefault<TypeIdHasher>>,
     type_: PhantomData<V>,
 }
 
 /// A view into a single empty location in an `Map`.
 pub struct VacantEntry<'a, A: ?Sized + UncheckedAnyExt, V: 'a> {
-    inner: raw::VacantEntry<'a, A>,
+    #[cfg(all(feature = "std", not(feature = "hashbrown")))]
+    inner: raw_hash_map::VacantEntry<'a, TypeId, Box<A>>,
+    #[cfg(feature = "hashbrown")]
+    inner: raw_hash_map::VacantEntry<'a, TypeId, Box<A>, BuildHasherDefault<TypeIdHasher>>,
     type_: PhantomData<V>,
 }
 
@@ -351,6 +451,35 @@ impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A>> VacantEntry<'a, A, V> {
     pub fn insert(self, value: V) -> &'a mut V {
         unsafe { self.inner.insert(value.into_box()).downcast_mut_unchecked() }
     }
+}
+
+/// A hasher designed to eke a little more speed out, given `TypeId`’s known characteristics.
+///
+/// Specifically, this is a no-op hasher that expects to be fed a u64’s worth of
+/// randomly-distributed bits. It works well for `TypeId` (eliminating start-up time, so that my
+/// get_missing benchmark is ~30ns rather than ~900ns, and being a good deal faster after that, so
+/// that my insert_and_get_on_260_types benchmark is ~12μs instead of ~21.5μs), but will
+/// panic in debug mode and always emit zeros in release mode for any other sorts of inputs, so
+/// yeah, don’t use it! 😀
+#[derive(Default)]
+pub struct TypeIdHasher {
+    value: u64,
+}
+
+impl Hasher for TypeIdHasher {
+    #[inline]
+    fn write(&mut self, bytes: &[u8]) {
+        // This expects to receive exactly one 64-bit value, and there’s no realistic chance of
+        // that changing, but I don’t want to depend on something that isn’t expressly part of the
+        // contract for safety. But I’m OK with release builds putting everything in one bucket
+        // if it *did* change (and debug builds panicking).
+        debug_assert_eq!(bytes.len(), 8);
+        let _ = bytes.try_into()
+            .map(|array| self.value = u64::from_ne_bytes(array));
+    }
+
+    #[inline]
+    fn finish(&self) -> u64 { self.value }
 }
 
 #[cfg(test)]
@@ -486,5 +615,24 @@ mod tests {
         assert_debug::<Map<dyn CloneAny>>();
         assert_debug::<Map<dyn CloneAny + Send>>();
         assert_debug::<Map<dyn CloneAny + Send + Sync>>();
+    }
+
+    #[test]
+    fn type_id_hasher() {
+        #[cfg(not(feature = "std"))]
+        use alloc::vec::Vec;
+        use core::hash::Hash;
+        fn verify_hashing_with(type_id: TypeId) {
+            let mut hasher = TypeIdHasher::default();
+            type_id.hash(&mut hasher);
+            // SAFETY: u64 is valid for all bit patterns.
+            assert_eq!(hasher.finish(), unsafe { core::mem::transmute::<TypeId, u64>(type_id) });
+        }
+        // Pick a variety of types, just to demonstrate it’s all sane. Normal, zero-sized, unsized, &c.
+        verify_hashing_with(TypeId::of::<usize>());
+        verify_hashing_with(TypeId::of::<()>());
+        verify_hashing_with(TypeId::of::<str>());
+        verify_hashing_with(TypeId::of::<&str>());
+        verify_hashing_with(TypeId::of::<Vec<u8>>());
     }
 }

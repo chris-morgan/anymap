@@ -24,8 +24,14 @@
 
 - Implemented `Default` on `Map` (not just on `RawMap`).
 
-- The implementation of `Into<RawMap<A>>` for `Map<A>` has been
-  replaced with the more general `From<Map<A>>` for `RawMap<A>`.
+- Removed the `anymap::raw` wrapper layer around `std::collections::hash_map`,
+  in favour of exposing the raw `HashMap` directly. I think there was a reason
+  I did it that seven years ago, but I think that reason may have dissolved by
+  now, and I can’t think of it and I don’t like the particular safe
+  `as_mut`/unsafe insert approach that I used. Because of the hashbrown stuff,
+  I have retained `anymap::RawMap` is an alias, and `anymap::raw_hash_map` too.
+  The end result of this is that raw access can finally access things that have
+  stabilised since Rust 1.7.0, and we’ll no longer need to play catch-up.
 
 - Worked around the spurious `where_clauses_object_safety` future-compatibility lint that has been raised since mid-2018.
   If you put `#![allow(where_clauses_object_safety)]` on your binary crates for this reason, you can remove it.
