@@ -56,7 +56,7 @@ fn type_id_hasher() {
 /// contents of an `Map`. However, because you will then be dealing with `Any` trait objects, it
 /// doesn’t tend to be so very useful. Still, if you need it, it’s here.
 #[derive(Debug)]
-pub struct RawMap<A: ?Sized + UncheckedAnyExt = Any> {
+pub struct RawMap<A: ?Sized + UncheckedAnyExt = dyn Any> {
     inner: HashMap<TypeId, Box<A>, BuildHasherDefault<TypeIdHasher>>,
 }
 

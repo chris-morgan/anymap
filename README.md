@@ -6,7 +6,7 @@ As another example of such an interface, JavaScript objects are exactly the same
 
 Fortunately, we can do better than these things in Rust. Our type system is quite equal to easy, robust expression of such problems.
 
-The ``AnyMap`` type is a friendly wrapper around a ``HashMap<TypeId, Box<Any>>``, exposing a nice, easy typed interface, perfectly safe and absolutely robust.
+The ``AnyMap`` type is a friendly wrapper around a ``HashMap<TypeId, Box<dyn Any>>``, exposing a nice, easy typed interface, perfectly safe and absolutely robust.
 
 What this means is that in an ``AnyMap`` you may store zero or one values for every type.
 
@@ -14,7 +14,7 @@ What this means is that in an ``AnyMap`` you may store zero or one values for ev
 
 This library uses a fair bit of unsafe code for several reasons:
 
-- To support Any and CloneAny, unsafe code is required (because of how the `downcast` methods are defined in `impl Any` rather than being trait methods; I think this is kind of a historical detail of the structure of `std::any::Any`); if you wanted to ditch `Clone` support this unsafety could be removed.
+- To support Any and CloneAny, unsafe code is required (because of how the `downcast` methods are defined in `impl dyn Any` rather than being trait methods; I think this is kind of a historical detail of the structure of `std::any::Any`); if you wanted to ditch `Clone` support this unsafety could be removed.
 
 - In the interests of performance, skipping various checks that are unnecessary because of the invariants of the data structure (no need to check the type ID when it’s been statically ensured by being used as the hash map key) and simplifying hashing (type IDs are already good hashes, no need to mangle them through SipHash).
 

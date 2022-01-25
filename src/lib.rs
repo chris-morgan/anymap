@@ -95,7 +95,7 @@ pub mod raw;
 /// be `anymap::any::Any`, but there are other choices:
 ///
 /// - If you want the entire map to be cloneable, use `CloneAny` instead of `Any`.
-/// - You can add on `+ Send` and/or `+ Sync` (e.g. `Map<Any + Send>`) to add those bounds.
+/// - You can add on `+ Send` and/or `+ Sync` (e.g. `Map<dyn Any + Send>`) to add those bounds.
 ///
 /// ```rust
 /// # use anymap::AnyMap;
@@ -120,7 +120,7 @@ pub mod raw;
 ///
 /// Values containing non-static references are not permitted.
 #[derive(Debug)]
-pub struct Map<A: ?Sized + UncheckedAnyExt = Any> {
+pub struct Map<A: ?Sized + UncheckedAnyExt = dyn Any> {
     raw: RawMap<A>,
 }
 
@@ -139,7 +139,7 @@ impl<A: ?Sized + UncheckedAnyExt> Clone for Map<A> where Box<A>: Clone {
 /// Why is this a separate type alias rather than a default value for `Map<A>`? `Map::new()`
 /// doesn’t seem to be happy to infer that it should go with the default value.
 /// It’s a bit sad, really. Ah well, I guess this approach will do.
-pub type AnyMap = Map<Any>;
+pub type AnyMap = Map<dyn Any>;
 
 impl_common_methods! {
     field: Map.raw;
@@ -394,7 +394,7 @@ mod tests {
     }
 
     test_entry!(test_entry_any, AnyMap);
-    test_entry!(test_entry_cloneany, Map<CloneAny>);
+    test_entry!(test_entry_cloneany, Map<dyn CloneAny>);
 
     #[test]
     fn test_default() {
@@ -404,7 +404,7 @@ mod tests {
 
     #[test]
     fn test_clone() {
-        let mut map: Map<CloneAny> = Map::new();
+        let mut map: Map<dyn CloneAny> = Map::new();
         let _ = map.insert(A(1));
         let _ = map.insert(B(2));
         let _ = map.insert(D(3));
@@ -428,25 +428,25 @@ mod tests {
         fn assert_sync<T: Sync>() { }
         fn assert_clone<T: Clone>() { }
         fn assert_debug<T: ::std::fmt::Debug>() { }
-        assert_send::<Map<Any + Send>>();
-        assert_send::<Map<Any + Send + Sync>>();
-        assert_sync::<Map<Any + Sync>>();
-        assert_sync::<Map<Any + Send + Sync>>();
-        assert_debug::<Map<Any>>();
-        assert_debug::<Map<Any + Send>>();
-        assert_debug::<Map<Any + Sync>>();
-        assert_debug::<Map<Any + Send + Sync>>();
-        assert_send::<Map<CloneAny + Send>>();
-        assert_send::<Map<CloneAny + Send + Sync>>();
-        assert_sync::<Map<CloneAny + Sync>>();
-        assert_sync::<Map<CloneAny + Send + Sync>>();
-        assert_clone::<Map<CloneAny + Send>>();
-        assert_clone::<Map<CloneAny + Send + Sync>>();
-        assert_clone::<Map<CloneAny + Sync>>();
-        assert_clone::<Map<CloneAny + Send + Sync>>();
-        assert_debug::<Map<CloneAny>>();
-        assert_debug::<Map<CloneAny + Send>>();
-        assert_debug::<Map<CloneAny + Sync>>();
-        assert_debug::<Map<CloneAny + Send + Sync>>();
+        assert_send::<Map<dyn Any + Send>>();
+        assert_send::<Map<dyn Any + Send + Sync>>();
+        assert_sync::<Map<dyn Any + Sync>>();
+        assert_sync::<Map<dyn Any + Send + Sync>>();
+        assert_debug::<Map<dyn Any>>();
+        assert_debug::<Map<dyn Any + Send>>();
+        assert_debug::<Map<dyn Any + Sync>>();
+        assert_debug::<Map<dyn Any + Send + Sync>>();
+        assert_send::<Map<dyn CloneAny + Send>>();
+        assert_send::<Map<dyn CloneAny + Send + Sync>>();
+        assert_sync::<Map<dyn CloneAny + Sync>>();
+        assert_sync::<Map<dyn CloneAny + Send + Sync>>();
+        assert_clone::<Map<dyn CloneAny + Send>>();
+        assert_clone::<Map<dyn CloneAny + Send + Sync>>();
+        assert_clone::<Map<dyn CloneAny + Sync>>();
+        assert_clone::<Map<dyn CloneAny + Send + Sync>>();
+        assert_debug::<Map<dyn CloneAny>>();
+        assert_debug::<Map<dyn CloneAny + Send>>();
+        assert_debug::<Map<dyn CloneAny + Sync>>();
+        assert_debug::<Map<dyn CloneAny + Send + Sync>>();
     }
 }
