@@ -43,44 +43,6 @@ impl<T: Any + Clone> CloneToAny for T {
     }
 }
 
-macro_rules! define {
-    (CloneAny) => {
-        /// A type to emulate dynamic typing.
-        ///
-        /// Every type with no non-`'static` references implements `Any`.
-        define!(CloneAny remainder);
-    };
-    (Any) => {
-        /// A type to emulate dynamic typing with cloning.
-        ///
-        /// Every type with no non-`'static` references that implements `Clone` implements `Any`.
-        define!(Any remainder);
-    };
-    ($t:ident remainder) => {
-        /// See the [`std::any` documentation](https://doc.rust-lang.org/std/any/index.html) for
-        /// more details on `Any` in general.
-        ///
-        /// This trait is not `std::any::Any` but rather a type extending that for this library’s
-        /// purposes so that it can be combined with marker traits like 
-        /// <code><a class=trait title=core::marker::Send
-        /// href=http://doc.rust-lang.org/std/marker/trait.Send.html>Send</a></code> and
-        /// <code><a class=trait title=core::marker::Sync
-        /// href=http://doc.rust-lang.org/std/marker/trait.Sync.html>Sync</a></code>.
-        ///
-        define!($t trait);
-    };
-    (CloneAny trait) => {
-        /// See also [`Any`](trait.Any.html) for a version without the `Clone` requirement.
-        pub trait CloneAny: Any + CloneToAny { }
-        impl<T: StdAny + Clone> CloneAny for T { }
-    };
-    (Any trait) => {
-        /// See also [`CloneAny`](trait.CloneAny.html) for a cloneable version of this trait.
-        pub trait Any: StdAny { }
-        impl<T: StdAny> Any for T { }
-    };
-}
-
 macro_rules! impl_clone {
     ($t:ty, $method:ident) => {
         impl Clone for Box<$t> {
@@ -141,17 +103,47 @@ macro_rules! implement {
     }
 }
 
-define!(Any);
+/// A type to emulate dynamic typing.
+///
+/// Every type with no non-`'static` references implements `Any`.
+/// See the [`std::any` documentation](https://doc.rust-lang.org/std/any/index.html) for
+/// more details on `Any` in general.
+///
+/// This trait is not `std::any::Any` but rather a type extending that for this library’s
+/// purposes so that it can be combined with marker traits like
+/// <code><a class=trait title=core::marker::Send
+/// href=http://doc.rust-lang.org/std/marker/trait.Send.html>Send</a></code> and
+/// <code><a class=trait title=core::marker::Sync
+/// href=http://doc.rust-lang.org/std/marker/trait.Sync.html>Sync</a></code>.
+///
+/// See also [`CloneAny`](trait.CloneAny.html) for a cloneable version of this trait.
+pub trait Any: StdAny { }
+impl<T: StdAny> Any for T { }
 implement!(Any,);
 implement!(Any, + Send);
 implement!(Any, + Sync);
 implement!(Any, + Send + Sync);
+
+/// A type to emulate dynamic typing with cloning.
+///
+/// Every type with no non-`'static` references that implements `Clone` implements `Any`.
+/// See the [`std::any` documentation](https://doc.rust-lang.org/std/any/index.html) for
+/// more details on `Any` in general.
+///
+/// This trait is not `std::any::Any` but rather a type extending that for this library’s
+/// purposes so that it can be combined with marker traits like
+/// <code><a class=trait title=core::marker::Send
+/// href=http://doc.rust-lang.org/std/marker/trait.Send.html>Send</a></code> and
+/// <code><a class=trait title=core::marker::Sync
+/// href=http://doc.rust-lang.org/std/marker/trait.Sync.html>Sync</a></code>.
+///
+/// See also [`Any`](trait.Any.html) for a version without the `Clone` requirement.
+pub trait CloneAny: Any + CloneToAny { }
+impl<T: StdAny + Clone> CloneAny for T { }
 implement!(CloneAny,);
 implement!(CloneAny, + Send);
 implement!(CloneAny, + Sync);
 implement!(CloneAny, + Send + Sync);
-
-define!(CloneAny);
 impl_clone!(dyn CloneAny, clone_to_any);
 impl_clone!(dyn CloneAny + Send, clone_to_any_send);
 impl_clone!(dyn CloneAny + Sync, clone_to_any_sync);
