@@ -6,7 +6,8 @@ use std::any::TypeId;
 use std::marker::PhantomData;
 
 use raw::RawMap;
-use any::{UncheckedAnyExt, IntoBox, Any};
+use any::{UncheckedAnyExt, IntoBox};
+pub use any::{Any, CloneAny};
 
 macro_rules! impl_common_methods {
     (
@@ -85,7 +86,7 @@ macro_rules! impl_common_methods {
     }
 }
 
-pub mod any;
+mod any;
 pub mod raw;
 
 /// A collection containing zero or one values for any given type and allowing convenient,
