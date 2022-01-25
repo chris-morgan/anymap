@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+export RUSTFLAGS="-D warnings"
+export RUSTDOCFLAGS="-D warnings"
+cargo +1.34.0 test
+cargo +1.34.0 test --release
+cargo clippy
+cargo test
+cargo test --release
+cargo doc
