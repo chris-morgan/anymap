@@ -2,6 +2,8 @@
 
 - Relicensed from MIT/Apache-2.0 to BlueOak-1.0.0/MIT/Apache-2.0.
 
+- Increased the minimum supported version of Rust from 1.7.0 to 1.34.0.
+
 - Remove `bench` Cargo feature (by shifting benchmarks out of `src/lib.rs` into
   `benches/bench.rs`; it still won’t run on anything but nightly, but that
   don’t signify). Technically a [breaking-change], but it was something for
