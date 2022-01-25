@@ -409,6 +409,34 @@ impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A>> Entry<'a, A, V> {
             Entry::Vacant(inner) => inner.insert(default()),
         }
     }
+
+    /// Ensures a value is in the entry by inserting the default value if empty,
+    /// and returns a mutable reference to the value in the entry.
+    #[inline]
+    pub fn or_default(self) -> &'a mut V where V: Default {
+        match self {
+            Entry::Occupied(inner) => inner.into_mut(),
+            Entry::Vacant(inner) => inner.insert(Default::default()),
+        }
+    }
+
+    /// Provides in-place mutable access to an occupied entry before any potential inserts into the
+    /// map.
+    #[inline]
+    // std::collections::hash_map::Entry::and_modify doesn’t have #[must_use], I’ll follow suit.
+    #[allow(clippy::return_self_not_must_use)]
+    pub fn and_modify<F: FnOnce(&mut V)>(self, f: F) -> Self {
+        match self {
+            Entry::Occupied(mut inner) => {
+                f(inner.get_mut());
+                Entry::Occupied(inner)
+            },
+            Entry::Vacant(inner) => Entry::Vacant(inner),
+        }
+    }
+
+    // Additional stable methods (as of 1.60.0-nightly) that could be added:
+    // insert_entry(self, value: V) -> OccupiedEntry<'a, K, V>                             (1.59.0)
 }
 
 impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A>> OccupiedEntry<'a, A, V> {

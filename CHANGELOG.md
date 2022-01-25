@@ -24,6 +24,8 @@
 
 - Implemented `Default` on `Map` (not just on `RawMap`).
 
+- Added `Entry::{or_default, and_modify}` (std::collections::hash_map parity).
+
 - Removed the `anymap::raw` wrapper layer around `std::collections::hash_map`,
   in favour of exposing the raw `HashMap` directly. I think there was a reason
   I did it that seven years ago, but I think that reason may have dissolved by
