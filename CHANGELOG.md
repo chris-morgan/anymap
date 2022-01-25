@@ -1,5 +1,10 @@
 # 1.0.0 (unreleased)
 
+Planned once the dust of 1.0.0-beta.1 settles, since 1.0.0-beta.1 ended up
+being bigger than I’d earlier intended.
+
+# 1.0.0-beta.1 (2022-01-25)
+
 - Removed `anymap::any::Any` in favour of just plain `core::any::Any`, since its
   `Send`/`Sync` story is now long stable.
 
@@ -37,9 +42,6 @@
 
 - Worked around the spurious `where_clauses_object_safety` future-compatibility lint that has been raised since mid-2018.
   If you put `#![allow(where_clauses_object_safety)]` on your binary crates for this reason, you can remove it.
-
-I don’t plan for there to be any real changes from 0.12.1;
-it should be just a bit of housecleaning and a version bump.
 
 # 0.12.1 (2017-01-20)
 

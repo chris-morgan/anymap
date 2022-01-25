@@ -1,6 +1,6 @@
 [package]
 name = "anymap"
-version = "0.12.1"
+version = "1.0.0-beta.1"
 authors = ["Chris Morgan <rust@chrismorgan.info>"]
 edition = "2018"
 rust-version = "1.36"
