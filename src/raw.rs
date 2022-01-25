@@ -40,6 +40,7 @@ fn type_id_hasher() {
     fn verify_hashing_with(type_id: TypeId) {
         let mut hasher = TypeIdHasher::default();
         type_id.hash(&mut hasher);
+        // SAFETY: u64 is valid for all bit patterns.
         assert_eq!(hasher.finish(), unsafe { mem::transmute::<TypeId, u64>(type_id) });
     }
     // Pick a variety of types, just to demonstrate it’s all sane. Normal, zero-sized, unsized, &c.
@@ -208,10 +209,11 @@ impl<A: ?Sized + UncheckedAnyExt> RawMap<A> {
     }
 
     /// Inserts a key-value pair from the map. If the key already had a value present in the map,
-    /// that value is returned. Otherwise, None is returned.
+    /// that value is returned. Otherwise, `None` is returned.
     ///
-    /// It is the caller’s responsibility to ensure that the key corresponds with the type ID of
-    /// the value. If they do not, memory safety may be violated.
+    /// # Safety
+    ///
+    /// `key` and the type ID of `value` must match, or *undefined behaviour* occurs.
     #[inline]
     pub unsafe fn insert(&mut self, key: TypeId, value: Box<A>) -> Option<Box<A>> {
         self.inner.insert(key, value)
@@ -280,8 +282,9 @@ impl<'a, A: ?Sized + UncheckedAnyExt> Entry<'a, A> {
     /// Ensures a value is in the entry by inserting the default if empty, and returns
     /// a mutable reference to the value in the entry.
     ///
-    /// It is the caller’s responsibility to ensure that the key of the entry corresponds with
-    /// the type ID of `value`. If they do not, memory safety may be violated.
+    /// # Safety
+    ///
+    /// The type ID of `default` must match the entry’s key, or *undefined behaviour* occurs.
     #[inline]
     pub unsafe fn or_insert(self, default: Box<A>) -> &'a mut A {
         match self {
@@ -293,8 +296,10 @@ impl<'a, A: ?Sized + UncheckedAnyExt> Entry<'a, A> {
     /// Ensures a value is in the entry by inserting the result of the default function if empty,
     /// and returns a mutable reference to the value in the entry.
     ///
-    /// It is the caller’s responsibility to ensure that the key of the entry corresponds with
-    /// the type ID of `value`. If they do not, memory safety may be violated.
+    /// # Safety
+    ///
+    /// The type ID of the value returned by `default` must match the entry’s key,
+    /// or *undefined behaviour* occurs.
     #[inline]
     pub unsafe fn or_insert_with<F: FnOnce() -> Box<A>>(self, default: F) -> &'a mut A {
         match self {
@@ -326,8 +331,9 @@ impl<'a, A: ?Sized + UncheckedAnyExt> OccupiedEntry<'a, A> {
 
     /// Sets the value of the entry, and returns the entry's old value.
     ///
-    /// It is the caller’s responsibility to ensure that the key of the entry corresponds with
-    /// the type ID of `value`. If they do not, memory safety may be violated.
+    /// # Safety
+    ///
+    /// The type ID of `value` must match the entry’s key, or *undefined behaviour* occurs.
     #[inline]
     pub unsafe fn insert(&mut self, value: Box<A>) -> Box<A> {
         self.inner.insert(value)
@@ -342,10 +348,11 @@ impl<'a, A: ?Sized + UncheckedAnyExt> OccupiedEntry<'a, A> {
 
 impl<'a, A: ?Sized + UncheckedAnyExt> VacantEntry<'a, A> {
     /// Sets the value of the entry with the VacantEntry's key,
-    /// and returns a mutable reference to it
+    /// and returns a mutable reference to it.
     ///
-    /// It is the caller’s responsibility to ensure that the key of the entry corresponds with
-    /// the type ID of `value`. If they do not, memory safety may be violated.
+    /// # Safety
+    ///
+    /// The type ID of `value` must match the entry’s key, or *undefined behaviour* occurs.
     #[inline]
     pub unsafe fn insert(self, value: Box<A>) -> &'a mut A {
         &mut **self.inner.insert(value)
