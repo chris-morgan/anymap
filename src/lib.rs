@@ -71,6 +71,10 @@ macro_rules! impl_common_methods {
                 self.$field.shrink_to_fit()
             }
 
+            // Additional stable methods (as of 1.60.0-nightly) that could be added:
+            // try_reserve(&mut self, additional: usize) -> Result<(), TryReserveError>    (1.57.0)
+            // shrink_to(&mut self, min_capacity: usize)                                   (1.56.0)
+
             /// Returns the number of items in the collection.
             #[inline]
             pub fn len(&self) -> usize {
@@ -203,6 +207,8 @@ impl<A: ?Sized + UncheckedAnyExt> Map<A> {
         }
     }
 
+    // rustc 1.60.0-nightly has another method try_insert that would be nice to add when stable.
+
     /// Removes the `T` value from the collection,
     /// returning it if there was one or `None` if there was not.
     #[inline]
@@ -229,6 +235,15 @@ impl<A: ?Sized + UncheckedAnyExt> Map<A> {
                 inner: e,
                 type_: PhantomData,
             }),
+        }
+    }
+}
+
+impl<A: ?Sized + UncheckedAnyExt> Extend<Box<A>> for Map<A> {
+    #[inline]
+    fn extend<T: IntoIterator<Item = Box<A>>>(&mut self, iter: T) {
+        for item in iter {
+            let _ = unsafe { self.raw.insert(item.type_id(), item) };
         }
     }
 }
