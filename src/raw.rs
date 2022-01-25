@@ -2,7 +2,7 @@
 //!
 //! All relevant details are in the `RawMap` struct.
 
-use std::any::TypeId;
+use std::any::{Any, TypeId};
 use std::borrow::Borrow;
 use std::collections::hash_map::{self, HashMap};
 use std::convert::TryInto;
@@ -12,7 +12,7 @@ use std::hash::{Hasher, BuildHasherDefault};
 use std::mem;
 use std::ops::{Index, IndexMut};
 
-use any::{Any, UncheckedAnyExt};
+use any::UncheckedAnyExt;
 
 #[derive(Default)]
 struct TypeIdHasher {

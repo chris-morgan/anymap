@@ -2,12 +2,12 @@
 
 #![warn(missing_docs, unused_results)]
 
-use std::any::TypeId;
+use std::any::{Any, TypeId};
 use std::marker::PhantomData;
 
 use raw::RawMap;
 use any::{UncheckedAnyExt, IntoBox};
-pub use any::{Any, CloneAny};
+pub use any::CloneAny;
 
 macro_rules! impl_common_methods {
     (
@@ -93,10 +93,10 @@ pub mod raw;
 /// type-safe access to those values.
 ///
 /// The type parameter `A` allows you to use a different value type; normally you will want it to
-/// be `anymap::any::Any`, but there are other choices:
+/// be `std::any::Any`, but there are other choices:
 ///
 /// - If you want the entire map to be cloneable, use `CloneAny` instead of `Any`.
-/// - You can add on `+ Send` and/or `+ Sync` (e.g. `Map<dyn Any + Send>`) to add those bounds.
+/// - You can add on `+ Send` or `+ Send + Sync` (e.g. `Map<dyn Any + Send>`) to add those bounds.
 ///
 /// ```rust
 /// # use anymap::AnyMap;
@@ -312,8 +312,7 @@ impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A>> VacantEntry<'a, A, V> {
 
 #[cfg(test)]
 mod tests {
-    use {Map, AnyMap, Entry};
-    use any::{Any, CloneAny};
+    use super::*;
 
     #[derive(Clone, Debug, PartialEq)] struct A(i32);
     #[derive(Clone, Debug, PartialEq)] struct B(i32);
@@ -431,23 +430,18 @@ mod tests {
         fn assert_debug<T: ::std::fmt::Debug>() { }
         assert_send::<Map<dyn Any + Send>>();
         assert_send::<Map<dyn Any + Send + Sync>>();
-        assert_sync::<Map<dyn Any + Sync>>();
         assert_sync::<Map<dyn Any + Send + Sync>>();
         assert_debug::<Map<dyn Any>>();
         assert_debug::<Map<dyn Any + Send>>();
-        assert_debug::<Map<dyn Any + Sync>>();
         assert_debug::<Map<dyn Any + Send + Sync>>();
         assert_send::<Map<dyn CloneAny + Send>>();
         assert_send::<Map<dyn CloneAny + Send + Sync>>();
-        assert_sync::<Map<dyn CloneAny + Sync>>();
         assert_sync::<Map<dyn CloneAny + Send + Sync>>();
         assert_clone::<Map<dyn CloneAny + Send>>();
         assert_clone::<Map<dyn CloneAny + Send + Sync>>();
-        assert_clone::<Map<dyn CloneAny + Sync>>();
         assert_clone::<Map<dyn CloneAny + Send + Sync>>();
         assert_debug::<Map<dyn CloneAny>>();
         assert_debug::<Map<dyn CloneAny + Send>>();
-        assert_debug::<Map<dyn CloneAny + Sync>>();
         assert_debug::<Map<dyn CloneAny + Send + Sync>>();
     }
 }

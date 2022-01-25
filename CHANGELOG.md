@@ -1,7 +1,14 @@
 # 1.0.0 (unreleased)
 
-- **Breaking change:** `anymap::any` flattened out of existence:
-  `anymap::any::{Any, CloneAny}` are now found at `anymap::{Any, CloneAny}`.
+- Removed `anymap::any::Any` in favour of just plain `std::any::Any`, since its
+  `Send`/`Sync` story is now long stable.
+
+  - This loses `Any + Sync`. `CloneAny + Sync` is also removed for consistency.
+    (So `Any + Sync` is gone, but `Any`, `Any + Send` and `Any + Send + Sync`
+    remain, plus the same set for `CloneAny`.)
+
+- `anymap::any::CloneAny` moved to `anymap::CloneAny`.
+  With nothing public left in `anymap::any`, it is removed.
 
 - Relicensed from MIT/Apache-2.0 to BlueOak-1.0.0/MIT/Apache-2.0.
 
