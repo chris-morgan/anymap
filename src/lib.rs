@@ -221,10 +221,8 @@ impl<A: ?Sized + UncheckedAnyExt> Map<A> {
     /// Otherwise, `None` is returned.
     #[inline]
     pub fn insert<T: IntoBox<A>>(&mut self, value: T) -> Option<T> {
-        unsafe {
-            self.raw.insert(TypeId::of::<T>(), value.into_box())
-                .map(|any| *any.downcast_unchecked::<T>())
-        }
+        self.raw.insert(TypeId::of::<T>(), value.into_box())
+            .map(|any| unsafe { *any.downcast_unchecked::<T>() })
     }
 
     // rustc 1.60.0-nightly has another method try_insert that would be nice to add when stable.
