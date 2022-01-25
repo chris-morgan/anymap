@@ -2,15 +2,13 @@
 //!
 //! All relevant details are in the `RawMap` struct.
 
-use std::any::{Any, TypeId};
-use std::borrow::Borrow;
+use core::any::{Any, TypeId};
+use core::borrow::Borrow;
 use std::collections::hash_map::{self, HashMap};
-use std::convert::TryInto;
-use std::hash::Hash;
-use std::hash::{Hasher, BuildHasherDefault};
-#[cfg(test)]
-use std::mem;
-use std::ops::{Index, IndexMut};
+use core::convert::TryInto;
+use core::hash::Hash;
+use core::hash::{Hasher, BuildHasherDefault};
+use core::ops::{Index, IndexMut};
 
 use crate::any::UncheckedAnyExt;
 
@@ -41,7 +39,7 @@ fn type_id_hasher() {
         let mut hasher = TypeIdHasher::default();
         type_id.hash(&mut hasher);
         // SAFETY: u64 is valid for all bit patterns.
-        assert_eq!(hasher.finish(), unsafe { mem::transmute::<TypeId, u64>(type_id) });
+        assert_eq!(hasher.finish(), unsafe { core::mem::transmute::<TypeId, u64>(type_id) });
     }
     // Pick a variety of types, just to demonstrate it’s all sane. Normal, zero-sized, unsized, &c.
     verify_hashing_with(TypeId::of::<usize>());

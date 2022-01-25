@@ -1,6 +1,6 @@
 # 1.0.0 (unreleased)
 
-- Removed `anymap::any::Any` in favour of just plain `std::any::Any`, since its
+- Removed `anymap::any::Any` in favour of just plain `core::any::Any`, since its
   `Send`/`Sync` story is now long stable.
 
   - This loses `Any + Sync`. `CloneAny + Sync` is also removed for consistency.

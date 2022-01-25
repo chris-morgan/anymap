@@ -4,8 +4,8 @@
 
 #![warn(missing_docs, unused_results)]
 
-use std::any::{Any, TypeId};
-use std::marker::PhantomData;
+use core::any::{Any, TypeId};
+use core::marker::PhantomData;
 
 use raw::RawMap;
 use any::{UncheckedAnyExt, IntoBox};
@@ -95,7 +95,7 @@ pub mod raw;
 /// type-safe access to those values.
 ///
 /// The type parameter `A` allows you to use a different value type; normally you will want it to
-/// be `std::any::Any`, but there are other choices:
+/// be `core::any::Any` (also known as `std::any::Any`), but there are other choices:
 ///
 /// - If you want the entire map to be cloneable, use `CloneAny` instead of `Any`; with that, you
 ///   can only add types that implement `Clone` to the map.
@@ -104,9 +104,9 @@ pub mod raw;
 ///
 /// Cumulatively, there are thus six forms of map:
 ///
-/// - <code>[Map]&lt;dyn [std::any::Any]&gt;</code>, also spelled [`AnyMap`] for convenience.
-/// - <code>[Map]&lt;dyn [std::any::Any] + Send&gt;</code>
-/// - <code>[Map]&lt;dyn [std::any::Any] + Send + Sync&gt;</code>
+/// - <code>[Map]&lt;dyn [core::any::Any]&gt;</code>, also spelled [`AnyMap`] for convenience.
+/// - <code>[Map]&lt;dyn [core::any::Any] + Send&gt;</code>
+/// - <code>[Map]&lt;dyn [core::any::Any] + Send + Sync&gt;</code>
 /// - <code>[Map]&lt;dyn [CloneAny]&gt;</code>
 /// - <code>[Map]&lt;dyn [CloneAny] + Send&gt;</code>
 /// - <code>[Map]&lt;dyn [CloneAny] + Send + Sync&gt;</code>
@@ -114,7 +114,7 @@ pub mod raw;
 /// ## Example
 ///
 /// (Here using the [`AnyMap`] convenience alias; the first line could use
-/// <code>[anymap::Map][Map]::&lt;[std::any::Any]&gt;::new()</code> instead if desired.)
+/// <code>[anymap::Map][Map]::&lt;[core::any::Any]&gt;::new()</code> instead if desired.)
 ///
 /// ```rust
 /// let mut data = anymap::AnyMap::new();
@@ -444,7 +444,7 @@ mod tests {
         fn assert_send<T: Send>() { }
         fn assert_sync<T: Sync>() { }
         fn assert_clone<T: Clone>() { }
-        fn assert_debug<T: ::std::fmt::Debug>() { }
+        fn assert_debug<T: ::core::fmt::Debug>() { }
         assert_send::<Map<dyn Any + Send>>();
         assert_send::<Map<dyn Any + Send + Sync>>();
         assert_sync::<Map<dyn Any + Send + Sync>>();
