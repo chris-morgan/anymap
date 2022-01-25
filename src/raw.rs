@@ -12,7 +12,7 @@ use std::hash::{Hasher, BuildHasherDefault};
 use std::mem;
 use std::ops::{Index, IndexMut};
 
-use any::UncheckedAnyExt;
+use crate::any::UncheckedAnyExt;
 
 #[derive(Default)]
 struct TypeIdHasher {

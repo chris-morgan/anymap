@@ -2,6 +2,7 @@
 name = "anymap"
 version = "0.12.1"
 authors = ["Chris Morgan <rust@chrismorgan.info>"]
+edition = "2018"
 rust-version = "1.34"
 description = "A safe and convenient store for one value of each type"
 repository = "https://github.com/chris-morgan/anymap"
