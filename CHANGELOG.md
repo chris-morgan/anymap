@@ -21,6 +21,9 @@
 
 - Implement `Default` on `Map` (not just on `RawMap`)
 
+- The implementation of `Into<RawMap<A>>` for `Map<A>` has been
+  replaced with the more general `From<Map<A>>` for `RawMap<A>`.
+
 - Worked around the spurious `where_clauses_object_safety` future-compatibility lint that has been raised since mid-2018.
   If you put `#![allow(where_clauses_object_safety)]` on your binary crates for this reason, you can remove it.
 

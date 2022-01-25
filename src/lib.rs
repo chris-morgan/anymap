@@ -236,10 +236,10 @@ impl<A: ?Sized + UncheckedAnyExt> AsMut<RawMap<A>> for Map<A> {
     }
 }
 
-impl<A: ?Sized + UncheckedAnyExt> Into<RawMap<A>> for Map<A> {
+impl<A: ?Sized + UncheckedAnyExt> From<Map<A>> for RawMap<A> {
     #[inline]
-    fn into(self) -> RawMap<A> {
-        self.raw
+    fn from(map: Map<A>) -> RawMap<A> {
+        map.raw
     }
 }
 
