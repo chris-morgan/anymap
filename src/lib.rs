@@ -48,87 +48,6 @@ pub use hashbrown::hash_map as raw_hash_map;
 
 use self::raw_hash_map::HashMap;
 
-macro_rules! impl_common_methods {
-    (
-        field: $t:ident.$field:ident;
-        new() => $new:expr;
-        with_capacity($with_capacity_arg:ident) => $with_capacity:expr;
-    ) => {
-        impl<A: ?Sized + UncheckedAnyExt> $t<A> {
-            /// Create an empty collection.
-            #[inline]
-            pub fn new() -> $t<A> {
-                $t {
-                    $field: $new,
-                }
-            }
-
-            /// Creates an empty collection with the given initial capacity.
-            #[inline]
-            pub fn with_capacity($with_capacity_arg: usize) -> $t<A> {
-                $t {
-                    $field: $with_capacity,
-                }
-            }
-
-            /// Returns the number of elements the collection can hold without reallocating.
-            #[inline]
-            pub fn capacity(&self) -> usize {
-                self.$field.capacity()
-            }
-
-            /// Reserves capacity for at least `additional` more elements to be inserted
-            /// in the collection. The collection may reserve more space to avoid
-            /// frequent reallocations.
-            ///
-            /// # Panics
-            ///
-            /// Panics if the new allocation size overflows `usize`.
-            #[inline]
-            pub fn reserve(&mut self, additional: usize) {
-                self.$field.reserve(additional)
-            }
-
-            /// Shrinks the capacity of the collection as much as possible. It will drop
-            /// down as much as possible while maintaining the internal rules
-            /// and possibly leaving some space in accordance with the resize policy.
-            #[inline]
-            pub fn shrink_to_fit(&mut self) {
-                self.$field.shrink_to_fit()
-            }
-
-            // Additional stable methods (as of 1.60.0-nightly) that could be added:
-            // try_reserve(&mut self, additional: usize) -> Result<(), TryReserveError>    (1.57.0)
-            // shrink_to(&mut self, min_capacity: usize)                                   (1.56.0)
-
-            /// Returns the number of items in the collection.
-            #[inline]
-            pub fn len(&self) -> usize {
-                self.$field.len()
-            }
-
-            /// Returns true if there are no items in the collection.
-            #[inline]
-            pub fn is_empty(&self) -> bool {
-                self.$field.is_empty()
-            }
-
-            /// Removes all items from the collection. Keeps the allocated memory for reuse.
-            #[inline]
-            pub fn clear(&mut self) {
-                self.$field.clear()
-            }
-        }
-
-        impl<A: ?Sized + UncheckedAnyExt> Default for $t<A> {
-            #[inline]
-            fn default() -> $t<A> {
-                $t::new()
-            }
-        }
-    }
-}
-
 mod any;
 
 /// Raw access to the underlying `HashMap`.
@@ -210,13 +129,78 @@ impl<A: ?Sized + UncheckedAnyExt> Clone for Map<A> where Box<A>: Clone {
 /// It’s a bit sad, really. Ah well, I guess this approach will do.
 pub type AnyMap = Map<dyn Any>;
 
-impl_common_methods! {
-    field: Map.raw;
-    new() => RawMap::with_hasher(Default::default());
-    with_capacity(capacity) => RawMap::with_capacity_and_hasher(capacity, Default::default());
+impl<A: ?Sized + UncheckedAnyExt> Default for Map<A> {
+    #[inline]
+    fn default() -> Map<A> {
+        Map::new()
+    }
 }
 
 impl<A: ?Sized + UncheckedAnyExt> Map<A> {
+    /// Create an empty collection.
+    #[inline]
+    pub fn new() -> Map<A> {
+        Map {
+            raw: RawMap::with_hasher(Default::default()),
+        }
+    }
+
+    /// Creates an empty collection with the given initial capacity.
+    #[inline]
+    pub fn with_capacity(capacity: usize) -> Map<A> {
+        Map {
+            raw: RawMap::with_capacity_and_hasher(capacity, Default::default()),
+        }
+    }
+
+    /// Returns the number of elements the collection can hold without reallocating.
+    #[inline]
+    pub fn capacity(&self) -> usize {
+        self.raw.capacity()
+    }
+
+    /// Reserves capacity for at least `additional` more elements to be inserted
+    /// in the collection. The collection may reserve more space to avoid
+    /// frequent reallocations.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the new allocation size overflows `usize`.
+    #[inline]
+    pub fn reserve(&mut self, additional: usize) {
+        self.raw.reserve(additional)
+    }
+
+    /// Shrinks the capacity of the collection as much as possible. It will drop
+    /// down as much as possible while maintaining the internal rules
+    /// and possibly leaving some space in accordance with the resize policy.
+    #[inline]
+    pub fn shrink_to_fit(&mut self) {
+        self.raw.shrink_to_fit()
+    }
+
+    // Additional stable methods (as of 1.60.0-nightly) that could be added:
+    // try_reserve(&mut self, additional: usize) -> Result<(), TryReserveError>    (1.57.0)
+    // shrink_to(&mut self, min_capacity: usize)                                   (1.56.0)
+
+    /// Returns the number of items in the collection.
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.raw.len()
+    }
+
+    /// Returns true if there are no items in the collection.
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.raw.is_empty()
+    }
+
+    /// Removes all items from the collection. Keeps the allocated memory for reuse.
+    #[inline]
+    pub fn clear(&mut self) {
+        self.raw.clear()
+    }
+
     /// Returns a reference to the value stored in the collection for the type `T`, if it exists.
     #[inline]
     pub fn get<T: IntoBox<A>>(&self) -> Option<&T> {
