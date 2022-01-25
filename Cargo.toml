@@ -1,11 +1,9 @@
 [package]
 name = "anymap"
 version = "0.12.1"
-authors = ["Chris Morgan <me@chrismorgan.info>"]
+authors = ["Chris Morgan <rust@chrismorgan.info>"]
 description = "A safe and convenient store for one value of each type"
-documentation = "https://docs.rs/anymap"
-#homepage = "https://github.com/chris-morgan/anymap"
 repository = "https://github.com/chris-morgan/anymap"
-readme = "README.md"
-keywords = ["container", "data-structure", "map"]
+keywords = ["container", "any", "map"]
+categories = ["rust-patterns", "data-structures"]
 license = "BlueOak-1.0.0 OR MIT OR Apache-2.0"

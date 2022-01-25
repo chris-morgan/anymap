@@ -1,7 +1,4 @@
-``AnyMap``, a safe and convenient store for one value of each type
-==================================================================
-
-[![Build Status](https://travis-ci.org/chris-morgan/anymap.svg?branch=master)](https://travis-ci.org/chris-morgan/anymap)
+# ``AnyMap``, a safe and convenient store for one value of each type
 
 If you’re familiar with Go and Go web frameworks, you may have come across the common “environment” pattern for storing data related to the request. It’s typically something like ``map[string]interface{}`` and is accessed with arbitrary strings which may clash and type assertions which are a little unwieldy and must be used very carefully. (Personally I would consider that it is just *asking* for things to blow up in your face.) In a language like Go, lacking in generics, this is the best that can be done; such a thing cannot possibly be made safe without generics.
 
@@ -13,13 +10,7 @@ The ``AnyMap`` type is a friendly wrapper around a ``HashMap<TypeId, Box<Any>>``
 
 What this means is that in an ``AnyMap`` you may store zero or one values for every type.
 
-Instructions
-------------
-
-Cargo all the way: it is `anymap` on crates.io.
-
-Unsafe code in this library
----------------------------
+## Unsafe code in this library
 
 This library uses a fair bit of unsafe code for several reasons:
 
