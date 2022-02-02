@@ -3,6 +3,10 @@
 Planned once the dust of 1.0.0-beta.1 settles, since 1.0.0-beta.1 ended up
 being bigger than I’d earlier intended.
 
+# 1.0.0-beta.2 (unreleased)
+
+- Fixed the broken `Extend` implementation added in 1.0.0-beta.1.
+
 # 1.0.0-beta.1 (2022-01-25)
 
 - Removed `anymap::any::Any` in favour of just plain `core::any::Any`, since its

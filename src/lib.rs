@@ -20,7 +20,7 @@ extern crate alloc;
 #[cfg(not(feature = "std"))]
 use alloc::boxed::Box;
 
-use any::{UncheckedAnyExt, IntoBox};
+use any::{Downcast, IntoBox};
 pub use any::CloneAny;
 
 #[cfg(all(feature = "std", not(feature = "hashbrown")))]
@@ -108,12 +108,12 @@ pub type RawMap<A> = HashMap<TypeId, Box<A>, BuildHasherDefault<TypeIdHasher>>;
 ///
 /// Values containing non-static references are not permitted.
 #[derive(Debug)]
-pub struct Map<A: ?Sized + UncheckedAnyExt = dyn Any> {
+pub struct Map<A: ?Sized + Downcast = dyn Any> {
     raw: RawMap<A>,
 }
 
 // #[derive(Clone)] would want A to implement Clone, but in reality it’s only Box<A> that can.
-impl<A: ?Sized + UncheckedAnyExt> Clone for Map<A> where Box<A>: Clone {
+impl<A: ?Sized + Downcast> Clone for Map<A> where Box<A>: Clone {
     #[inline]
     fn clone(&self) -> Map<A> {
         Map {
@@ -129,14 +129,14 @@ impl<A: ?Sized + UncheckedAnyExt> Clone for Map<A> where Box<A>: Clone {
 /// It’s a bit sad, really. Ah well, I guess this approach will do.
 pub type AnyMap = Map<dyn Any>;
 
-impl<A: ?Sized + UncheckedAnyExt> Default for Map<A> {
+impl<A: ?Sized + Downcast> Default for Map<A> {
     #[inline]
     fn default() -> Map<A> {
         Map::new()
     }
 }
 
-impl<A: ?Sized + UncheckedAnyExt> Map<A> {
+impl<A: ?Sized + Downcast> Map<A> {
     /// Create an empty collection.
     #[inline]
     pub fn new() -> Map<A> {
@@ -336,17 +336,17 @@ impl<A: ?Sized + UncheckedAnyExt> Map<A> {
     }
 }
 
-impl<A: ?Sized + UncheckedAnyExt> Extend<Box<A>> for Map<A> {
+impl<A: ?Sized + Downcast> Extend<Box<A>> for Map<A> {
     #[inline]
     fn extend<T: IntoIterator<Item = Box<A>>>(&mut self, iter: T) {
         for item in iter {
-            let _ = self.raw.insert(item.type_id(), item);
+            let _ = self.raw.insert(Downcast::type_id(&*item), item);
         }
     }
 }
 
 /// A view into a single occupied location in an `Map`.
-pub struct OccupiedEntry<'a, A: ?Sized + UncheckedAnyExt, V: 'a> {
+pub struct OccupiedEntry<'a, A: ?Sized + Downcast, V: 'a> {
     #[cfg(all(feature = "std", not(feature = "hashbrown")))]
     inner: raw_hash_map::OccupiedEntry<'a, TypeId, Box<A>>,
     #[cfg(feature = "hashbrown")]
@@ -355,7 +355,7 @@ pub struct OccupiedEntry<'a, A: ?Sized + UncheckedAnyExt, V: 'a> {
 }
 
 /// A view into a single empty location in an `Map`.
-pub struct VacantEntry<'a, A: ?Sized + UncheckedAnyExt, V: 'a> {
+pub struct VacantEntry<'a, A: ?Sized + Downcast, V: 'a> {
     #[cfg(all(feature = "std", not(feature = "hashbrown")))]
     inner: raw_hash_map::VacantEntry<'a, TypeId, Box<A>>,
     #[cfg(feature = "hashbrown")]
@@ -364,14 +364,14 @@ pub struct VacantEntry<'a, A: ?Sized + UncheckedAnyExt, V: 'a> {
 }
 
 /// A view into a single location in an `Map`, which may be vacant or occupied.
-pub enum Entry<'a, A: ?Sized + UncheckedAnyExt, V: 'a> {
+pub enum Entry<'a, A: ?Sized + Downcast, V: 'a> {
     /// An occupied Entry
     Occupied(OccupiedEntry<'a, A, V>),
     /// A vacant Entry
     Vacant(VacantEntry<'a, A, V>),
 }
 
-impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A>> Entry<'a, A, V> {
+impl<'a, A: ?Sized + Downcast, V: IntoBox<A>> Entry<'a, A, V> {
     /// Ensures a value is in the entry by inserting the default if empty, and returns
     /// a mutable reference to the value in the entry.
     #[inline]
@@ -421,7 +421,7 @@ impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A>> Entry<'a, A, V> {
     // insert_entry(self, value: V) -> OccupiedEntry<'a, K, V>                             (1.59.0)
 }
 
-impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A>> OccupiedEntry<'a, A, V> {
+impl<'a, A: ?Sized + Downcast, V: IntoBox<A>> OccupiedEntry<'a, A, V> {
     /// Gets a reference to the value in the entry
     #[inline]
     pub fn get(&self) -> &V {
@@ -454,7 +454,7 @@ impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A>> OccupiedEntry<'a, A, V> {
     }
 }
 
-impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A>> VacantEntry<'a, A, V> {
+impl<'a, A: ?Sized + Downcast, V: IntoBox<A>> VacantEntry<'a, A, V> {
     /// Sets the value of the entry with the VacantEntry's key,
     /// and returns a mutable reference to it
     #[inline]
@@ -644,5 +644,14 @@ mod tests {
         verify_hashing_with(TypeId::of::<str>());
         verify_hashing_with(TypeId::of::<&str>());
         verify_hashing_with(TypeId::of::<Vec<u8>>());
+    }
+
+    #[test]
+    fn test_extend() {
+        let mut map = AnyMap::new();
+        map.extend([Box::new(123) as Box<dyn Any>, Box::new(456), Box::new(true)]);
+        assert_eq!(map.get(), Some(&456));
+        assert_eq!(map.get::<bool>(), Some(&true));
+        assert!(map.get::<Box<dyn Any>>().is_none());
     }
 }
