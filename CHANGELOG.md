@@ -7,6 +7,15 @@ being bigger than I’d earlier intended.
 
 - Fixed the broken `Extend` implementation added in 1.0.0-beta.1.
 
+- Split the hashbrown implementation into a new module, `hashbrown`:
+  std and hashbrown can now coexist completely peacefully,
+  with `anymap::Map` being powered by `std::collections::hash_map`,
+  and `anymap::hashbrown::Map` being powered by `hashbrown::hash_map`.
+  The `raw_hash_map` alias, provided in 1.0.0-beta.1 because of the ambiguity
+  of what backed `anymap::Map`, is removed as superfluous and useless.
+  `RawMap` remains, despite not being *required*, as an ergonomic improvement.
+  With this, we’re back to proper completely additive Cargo features.
+
 # 1.0.0-beta.1 (2022-01-25)
 
 - Removed `anymap::any::Any` in favour of just plain `core::any::Any`, since its

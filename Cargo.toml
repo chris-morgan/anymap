@@ -11,6 +11,9 @@ categories = ["rust-patterns", "data-structures", "no-std"]
 license = "BlueOak-1.0.0 OR MIT OR Apache-2.0"
 include = ["/README.md", "/COPYING", "/CHANGELOG.md", "/src"]
 
+[package.metadata.docs.rs]
+all-features = true
+
 [features]
 default = ["std"]
 std = []

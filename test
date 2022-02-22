@@ -4,11 +4,10 @@ export RUSTFLAGS="-D warnings"
 export RUSTDOCFLAGS="-D warnings"
 run_tests() {
 	for release in "" "--release"; do
+		cargo $1 test $release --no-default-features  # Not very useful without std or hashbrown, but hey, it works! (Doctests emit an error about needing a global allocator, but it exits zero anyway. ¯\_(ツ)_/¯)
 		cargo $1 test $release --no-default-features --features hashbrown
-		cargo $1 test $release --features hashbrown
-		# (2>/dev/null because otherwise you’ll keep seeing errors and double-guessing whether they were supposed to happen or whether the script failed to exit nonzero.)
-		! 2>/dev/null cargo $1 test $release --no-default-features || ! echo "'cargo $1 test $release --no-default-features' failed to fail (sorry, its stderr is suppressed, try it manually)"
 		cargo $1 test $release
+		cargo $1 test $release --all-features
 	done
 }
 

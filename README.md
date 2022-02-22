@@ -41,21 +41,19 @@ assert_eq!(&*data.get::<Foo>().unwrap().str, "foot");
 
 ## Cargo features/dependencies/usage
 
-Typical Cargo.toml usage:
+Typical Cargo.toml usage, providing `anymap::AnyMap` *et al.* backed by `std::collections::HashMap`:
 
 ```toml
 [dependencies]
 anymap = "1.0.0-beta.1"
 ```
 
-No-std usage, using `alloc` and the [hashbrown](https://rust-lang.github.io/hashbrown) crate instead of `std::collections::HashMap`:
+No-std usage, providing `anymap::hashbrown::AnyMap` *et al.* (note the different path, required because Cargo features are additive) backed by `alloc` and the [hashbrown](https://rust-lang.github.io/hashbrown) crate:
 
 ```toml
 [dependencies]
 anymap = { version = "1.0.0-beta.1", default-features = false, features = ["hashbrown"] }
 ```
-
-The `std` feature is enabled by default. The `hashbrown` feature overrides it. At least one of the two must be enabled.
 
 **On stability:** hashbrown is still pre-1.0.0 and experiencing breaking changes. Because it’s useful for a small fraction of users, I am retaining it, but with *different compatibility guarantees to the typical SemVer ones*. Where possible, I will just widen the range for new releases of hashbrown, but if an incompatible change occurs, I may drop support for older versions of hashbrown with a bump to the *minor* part of the anymap version number (e.g. 1.1.0, 1.2.0). Iff you’re using this feature, this is cause to *consider* using a tilde requirement like `"~1.0"` (or spell it out as `>=1, <1.1`).
 
