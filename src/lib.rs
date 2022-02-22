@@ -405,8 +405,6 @@ impl<'a, A: ?Sized + Downcast, V: IntoBox<A>> Entry<'a, A, V> {
     /// Provides in-place mutable access to an occupied entry before any potential inserts into the
     /// map.
     #[inline]
-    // std::collections::hash_map::Entry::and_modify doesn’t have #[must_use], I’ll follow suit.
-    #[allow(clippy::return_self_not_must_use)]
     pub fn and_modify<F: FnOnce(&mut V)>(self, f: F) -> Self {
         match self {
             Entry::Occupied(mut inner) => {
