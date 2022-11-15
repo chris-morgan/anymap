@@ -7,18 +7,29 @@
 //! This crate has two independent features, each of which provides an implementation providing
 //! types `Map`, `AnyMap`, `OccupiedEntry`, `VacantEntry`, `Entry` and `RawMap`:
 //!
-#![cfg_attr(feature = "std", doc = " - **std** (default, *enabled* in this build):")]
-#![cfg_attr(not(feature = "std"), doc = " - **std** (default, *disabled* in this build):")]
+#![cfg_attr(
+    feature = "std",
+    doc = " - **std** (default, *enabled* in this build):"
+)]
+#![cfg_attr(
+    not(feature = "std"),
+    doc = " - **std** (default, *disabled* in this build):"
+)]
 //!   an implementation using `std::collections::hash_map`, placed in the crate root
 //!   (e.g. `anymap::AnyMap`).
 //!
-#![cfg_attr(feature = "hashbrown", doc = " - **hashbrown** (optional; *enabled* in this build):")]
-#![cfg_attr(not(feature = "hashbrown"), doc = " - **hashbrown** (optional; *disabled* in this build):")]
+#![cfg_attr(
+    feature = "hashbrown",
+    doc = " - **hashbrown** (optional; *enabled* in this build):"
+)]
+#![cfg_attr(
+    not(feature = "hashbrown"),
+    doc = " - **hashbrown** (optional; *disabled* in this build):"
+)]
 //!   an implementation using `alloc` and `hashbrown::hash_map`, placed in a module `hashbrown`
 //!   (e.g. `anymap::hashbrown::AnyMap`).
 
 #![warn(missing_docs, unused_results)]
-
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use core::convert::TryInto;
@@ -302,6 +313,12 @@ macro_rules! everything {
             pub unsafe fn from_raw(raw: RawMap<A>) -> Map<A> {
                 Self { raw }
             }
+
+            /// Extend a Map from another Map of the same A. This specializes the implementation
+            /// to internally extend the types.
+            pub fn extend(&mut self, other: Map<A>) {
+                self.raw.extend(other.raw);
+            }
         }
 
         impl<A: ?Sized + Downcast> Extend<Box<A>> for Map<A> {
@@ -422,6 +439,7 @@ macro_rules! everything {
                 unsafe { self.inner.insert(value.into_box()).downcast_mut_unchecked() }
             }
         }
+
 
         #[cfg(test)]
         mod tests {
@@ -575,19 +593,16 @@ macro_rules! everything {
 }
 
 #[cfg(feature = "std")]
-everything!(
-    "let mut data = anymap::AnyMap::new();",
-    std::collections
-);
+everything!("let mut data = anymap::AnyMap::new();", std::collections);
 
 #[cfg(feature = "hashbrown")]
 /// AnyMap backed by `hashbrown`.
 ///
 /// This depends on the `hashbrown` Cargo feature being enabled.
 pub mod hashbrown {
-    use crate::TypeIdHasher;
     #[cfg(doc)]
     use crate::any::CloneAny;
+    use crate::TypeIdHasher;
 
     everything!(
         "let mut data = anymap::hashbrown::AnyMap::new();",
@@ -617,25 +632,30 @@ impl Hasher for TypeIdHasher {
         // contract for safety. But I’m OK with release builds putting everything in one bucket
         // if it *did* change (and debug builds panicking).
         debug_assert_eq!(bytes.len(), 8);
-        let _ = bytes.try_into()
+        let _ = bytes
+            .try_into()
             .map(|array| self.value = u64::from_ne_bytes(array));
     }
 
     #[inline]
-    fn finish(&self) -> u64 { self.value }
+    fn finish(&self) -> u64 {
+        self.value
+    }
 }
 
 #[test]
 fn type_id_hasher() {
     #[cfg(not(feature = "std"))]
     use alloc::vec::Vec;
-    use core::hash::Hash;
     use core::any::TypeId;
+    use core::hash::Hash;
     fn verify_hashing_with(type_id: TypeId) {
         let mut hasher = TypeIdHasher::default();
         type_id.hash(&mut hasher);
         // SAFETY: u64 is valid for all bit patterns.
-        assert_eq!(hasher.finish(), unsafe { core::mem::transmute::<TypeId, u64>(type_id) });
+        assert_eq!(hasher.finish(), unsafe {
+            core::mem::transmute::<TypeId, u64>(type_id)
+        });
     }
     // Pick a variety of types, just to demonstrate it’s all sane. Normal, zero-sized, unsized, &c.
     verify_hashing_with(TypeId::of::<usize>());
