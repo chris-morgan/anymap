@@ -577,16 +577,19 @@ macro_rules! everything {
 }
 
 #[cfg(feature = "std")]
-everything!("let mut data = anymap::AnyMap::new();", std::collections);
+everything!(
+    "let mut data = anymap::AnyMap::new();",
+    std::collections
+);
 
 #[cfg(feature = "hashbrown")]
 /// AnyMap backed by `hashbrown`.
 ///
 /// This depends on the `hashbrown` Cargo feature being enabled.
 pub mod hashbrown {
+    use crate::TypeIdHasher;
     #[cfg(doc)]
     use crate::any::CloneAny;
-    use crate::TypeIdHasher;
 
     everything!(
         "let mut data = anymap::hashbrown::AnyMap::new();",
@@ -616,30 +619,25 @@ impl Hasher for TypeIdHasher {
         // contract for safety. But I’m OK with release builds putting everything in one bucket
         // if it *did* change (and debug builds panicking).
         debug_assert_eq!(bytes.len(), 8);
-        let _ = bytes
-            .try_into()
+        let _ = bytes.try_into()
             .map(|array| self.value = u64::from_ne_bytes(array));
     }
 
     #[inline]
-    fn finish(&self) -> u64 {
-        self.value
-    }
+    fn finish(&self) -> u64 { self.value }
 }
 
 #[test]
 fn type_id_hasher() {
     #[cfg(not(feature = "std"))]
     use alloc::vec::Vec;
-    use core::any::TypeId;
     use core::hash::Hash;
+    use core::any::TypeId;
     fn verify_hashing_with(type_id: TypeId) {
         let mut hasher = TypeIdHasher::default();
         type_id.hash(&mut hasher);
         // SAFETY: u64 is valid for all bit patterns.
-        assert_eq!(hasher.finish(), unsafe {
-            core::mem::transmute::<TypeId, u64>(type_id)
-        });
+        assert_eq!(hasher.finish(), unsafe { core::mem::transmute::<TypeId, u64>(type_id) });
     }
     // Pick a variety of types, just to demonstrate it’s all sane. Normal, zero-sized, unsized, &c.
     verify_hashing_with(TypeId::of::<usize>());
