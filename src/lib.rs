@@ -28,8 +28,10 @@ use core::hash::Hasher;
 extern crate alloc;
 
 pub use crate::any::CloneAny;
+pub use crate::fetch::*;
 
 mod any;
+mod fetch;
 
 #[cfg(any(feature = "std", feature = "hashbrown"))]
 macro_rules! everything {
